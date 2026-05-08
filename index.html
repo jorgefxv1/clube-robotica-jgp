@@ -1,0 +1,2629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clube de Robótica JGP — OBR 2026</title>
+  <script>
+    /* Pre-paint: aplica o tema ANTES do CSS pintar — sem flash (FOUC).
+       Prioridade: escolha salva > preferência do SO > dark padrão. */
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        var theme = saved || (prefersLight ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root, [data-theme="dark"] {
+      --bg:           #07070F;
+      --bg-rgb:       7,7,15;
+      --surface:      #0D0D1C;
+      --card:         #111120;
+      --card-hex:     #111120;
+      --card-deep:    #0D0D1C;
+      --card-deepest: #070710;
+      --border:       #1C1C34;
+      --text:         #F0F0FA;
+      --text-soft:    #C8C8E0;
+      --muted:        #6A6A88;
+      --accent:       #22D3EE;
+      --accent-soft:  rgba(34,211,238,0.07);
+      --accent-mid:   rgba(34,211,238,0.22);
+      --accent-glow:  rgba(34,211,238,0.35);
+      --grid-line:    rgba(28,28,52,0.5);
+      --particle:     rgba(34,211,238,0.45);
+      --particle-line:34,211,238;
+      --btn-fg:       #07070F;
+      --shadow-md:    0 4px 20px rgba(0,0,0,0.4);
+      --shadow-lg:    0 12px 40px rgba(0,0,0,0.5);
+      --shadow-pop:   0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(34,211,238,0.08);
+      --shadow-xl:    0 0 60px rgba(0,0,0,0.7);
+      --hist-badge-purple-bg: rgba(167,139,250,0.1);
+      --hist-badge-purple-fg: #A78BFA;
+      --hist-badge-purple-bd: rgba(167,139,250,0.25);
+      --hist-badge-green-bg:  rgba(52,211,153,0.08);
+      --hist-badge-green-fg:  #34D399;
+      --hist-badge-green-bd:  rgba(52,211,153,0.2);
+      color-scheme: dark;
+    }
+
+    [data-theme="light"] {
+      --bg:           #F6F7FB;
+      --bg-rgb:       246,247,251;
+      --surface:      #FFFFFF;
+      --card:         #FFFFFF;
+      --card-hex:     #FFFFFF;
+      --card-deep:    #F0F2F8;
+      --card-deepest: #E8EBF3;
+      --border:       #DCDEE8;
+      --text:         #0F1020;
+      --text-soft:    #2A2C42;
+      --muted:        #5A5C76;
+      --accent:       #0891B2;
+      --accent-soft:  rgba(8,145,178,0.07);
+      --accent-mid:   rgba(8,145,178,0.32);
+      --accent-glow:  rgba(8,145,178,0.25);
+      --grid-line:    rgba(15,16,32,0.07);
+      --particle:     rgba(8,145,178,0.45);
+      --particle-line:8,145,178;
+      --btn-fg:       #FFFFFF;
+      --shadow-md:    0 4px 16px rgba(15,16,32,0.08);
+      --shadow-lg:    0 12px 32px rgba(15,16,32,0.10);
+      --shadow-pop:   0 8px 28px rgba(15,16,32,0.12), 0 0 0 1px rgba(8,145,178,0.10);
+      --shadow-xl:    0 12px 48px rgba(15,16,32,0.18);
+      --hist-badge-purple-bg: rgba(124,58,237,0.10);
+      --hist-badge-purple-fg: #6D28D9;
+      --hist-badge-purple-bd: rgba(124,58,237,0.30);
+      --hist-badge-green-bg:  rgba(5,150,105,0.10);
+      --hist-badge-green-fg:  #047857;
+      --hist-badge-green-bd:  rgba(5,150,105,0.28);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* IHC: transição suave somente durante a troca de tema, evita re-trigger em hover/focus */
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
+      transition: background-color 0.3s ease,
+                  background 0.3s ease,
+                  color 0.3s ease,
+                  border-color 0.3s ease,
+                  box-shadow 0.3s ease,
+                  fill 0.3s ease,
+                  stroke 0.3s ease !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html.theme-transitioning,
+      html.theme-transitioning *,
+      html.theme-transitioning *::before,
+      html.theme-transitioning *::after {
+        transition: none !important;
+      }
+    }
+
+    /* ─── NAV ─────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 100;
+      height: 64px;
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(var(--bg-rgb),0.78);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-brand-text {
+      font-size: 0.92em;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-brand-accent {
+      color: var(--accent);
+      text-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      display: inline-block;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.82em;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      padding: 7px 14px;
+      border-radius: 100px;
+      transition: color 0.2s ease, background-color 0.25s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: var(--accent-soft);
+    }
+
+    /* IHC – feedback de localização ("você está aqui"):
+       fundo tipo pill com a cor do accent indica a seção ativa. */
+    .nav-links a.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-mid);
+    }
+
+    /* ─── HERO ─────────────────────────────────────────── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 100px 48px 60px;
+    }
+
+    #particles-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .hero-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 52px 52px;
+      z-index: 0;
+    }
+
+    .hero-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 40%, var(--bg) 100%);
+      z-index: 0;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 64px;
+      align-items: center;
+      max-width: 1080px;
+      width: 100%;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88em;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 7px 20px;
+      border: 1.5px solid var(--accent-mid);
+      border-radius: 100px;
+      background: var(--accent-soft);
+      margin-bottom: 22px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .eyebrow .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero-text h1 {
+      font-size: clamp(2.8em, 5.5vw, 4.2em);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+
+    .hero-text h1 .accent-text {
+      color: var(--accent);
+      text-shadow: 0 0 40px var(--accent-glow);
+    }
+
+    .hero-slogan {
+      font-size: 0.88em;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      margin-bottom: 18px;
+      opacity: 0.75;
+    }
+
+    .hero-text .desc {
+      font-size: 0.95em;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.84em;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--btn-fg);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 24px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent-mid);
+      color: var(--accent);
+    }
+
+    .robot-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .robot-wrap svg {
+      width: 100%;
+      max-width: 260px;
+      animation: float 4s ease-in-out infinite;
+      filter: drop-shadow(0 0 24px var(--accent-glow));
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-14px); }
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      margin-top: 52px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat .num {
+      font-size: 1.8em;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .stat .num span { color: var(--accent); }
+    .stat .label { font-size: 0.72em; color: var(--muted); margin-top: 2px; }
+
+    /* ─── SHARED SECTION ───────────────────────────────── */
+    .section-wrap {
+      padding: 64px 48px;
+      max-width: 1080px;
+      margin: 0 auto;
+      border-top: 1px solid var(--border);
+    }
+
+    /* IHC – hierarquia visual: o rótulo da seção ganha um acento fino antes
+       do texto. Suficiente para guiar o olhar (Lei de Prägnanz / pré-atenção
+       de cor + linha) sem competir com o título nem virar ruído. */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.92em;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      margin-bottom: 18px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 36px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .section-title {
+      font-size: clamp(1.8em, 3vw, 2.5em);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 14px;
+    }
+
+    .section-desc {
+      font-size: 0.9em;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 56px;
+    }
+
+    /* ─── SOBRE ─────────────────────────────────────────── */
+    .obr-intro {
+      font-size: 0.95em;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 720px;
+      margin-bottom: 44px;
+    }
+
+    .obr-intro strong { color: var(--text); font-weight: 600; }
+
+    .modalidades-label {
+      font-size: 0.7em;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 10px;
+    }
+
+    .modalidades-title {
+      font-size: 1.5em;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+
+    /* IHC – consistência: cards uniformes (mesma largura/altura) com a última
+       linha centralizada quando o número de itens não preenche o grid. */
+    .sobre-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+    }
+
+    .sobre-grid .info-card {
+      flex: 1 1 280px;
+      max-width: calc((100% - 28px) / 3);
+    }
+
+    .info-card {
+      background: linear-gradient(135deg, var(--card) 0%, rgba(34,211,238,0.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-card:hover {
+      border-color: var(--accent-mid);
+      transform: translateY(-3px);
+    }
+
+    /* Ícone das modalidades: mesma linguagem visual dos cards de equipe
+       (caixa arredondada com tint do accent), centralizado horizontalmente. */
+    .info-card .ic-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4em;
+      margin: 0 auto 16px;
+    }
+
+    .info-card h3 {
+      font-size: 0.95em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .info-card > p {
+      font-size: 0.78em;
+      color: var(--muted);
+      line-height: 1.65;
+      flex: 1;
+      text-align: justify;
+      hyphens: auto;
+    }
+
+
+    .learn-btn {
+      margin-top: 16px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.68em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: center;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    .learn-btn:hover {
+      border-color: var(--accent-mid);
+      background: var(--accent-soft);
+    }
+
+    .info-expand {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, margin-top 0.35s;
+    }
+
+    .info-expand.open {
+      max-height: 300px;
+      margin-top: 14px;
+    }
+
+    .info-expand-inner {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      font-size: 0.76em;
+      color: var(--muted);
+      line-height: 1.7;
+      text-align: justify;
+      hyphens: auto;
+    }
+
+    /* ─── CRONOGRAMA ────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 34px;
+      left: calc(12.5% + 4px);
+      right: calc(12.5% + 4px);
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--border) 60%);
+      z-index: 0;
+    }
+
+    .tl-item {
+      position: relative;
+      padding: 0 20px;
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    .tl-dot {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15em;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 24px;
+      transition: border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+
+    .tl-item.active .tl-dot {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 22px var(--accent-mid);
+      transform: scale(1.08);
+    }
+
+    .tl-item h4 {
+      font-size: 0.95em;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--muted);
+      transition: color 0.25s;
+    }
+
+    .tl-item.active h4 { color: var(--text); }
+
+    .tl-date {
+      font-size: 0.72em;
+      color: var(--border);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-bottom: 14px;
+      display: block;
+      transition: color 0.25s;
+    }
+
+    .tl-item.active .tl-date { color: var(--accent); }
+
+    .tl-list { list-style: none; }
+
+    .tl-list li {
+      font-size: 0.76em;
+      color: var(--border);
+      padding: 4px 0;
+      display: flex;
+      gap: 7px;
+      transition: color 0.25s;
+    }
+
+    .tl-item.active .tl-list li { color: var(--muted); }
+
+    .tl-list li::before {
+      content: '—';
+      color: var(--border);
+      flex-shrink: 0;
+      transition: color 0.25s;
+    }
+
+    .tl-item.active .tl-list li::before { color: var(--accent); }
+
+    /* ─── EQUIPES ────────────────────────────────────────── */
+    .teams-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .team-card {
+      background: linear-gradient(135deg, var(--card) 0%, rgba(34,211,238,0.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 26px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .team-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .team-card:hover {
+      border-color: var(--accent-mid);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .team-card:hover::after { opacity: 1; }
+
+    .team-icon-wrap {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3em;
+      margin: 0 auto 16px;
+    }
+
+    .member-chips { justify-content: center; }
+
+    .team-card h3 { font-size: 1em; font-weight: 700; margin-bottom: 4px; }
+    .team-count { font-size: 0.7em; color: var(--muted); margin-bottom: 16px; }
+
+    .member-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    .chip {
+      font-size: 0.62em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 2px 9px;
+      color: var(--muted);
+    }
+
+    .card-cta { margin-top: 18px; font-size: 0.72em; color: var(--accent); font-weight: 600; text-align: center; }
+
+    /* ─── MODAL ─────────────────────────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(var(--bg-rgb),0.88);
+      backdrop-filter: blur(10px);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 540px;
+      width: 100%;
+      position: relative;
+      animation: modal-in 0.2s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+
+    .modal-close-btn:hover { border-color: var(--accent-mid); color: var(--text); }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .modal-team-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+    }
+
+    .modal-head h2 { font-size: 1.3em; font-weight: 700; }
+    .modal-sub-text { font-size: 0.75em; color: var(--muted); margin-top: 3px; }
+
+    .members { display: flex; flex-direction: column; gap: 8px; }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .member-info { flex: 1; }
+    .member-name { font-size: 0.86em; font-weight: 600; }
+    .member-role { font-size: 0.68em; color: var(--muted); margin-top: 2px; }
+
+    .badge {
+      font-size: 0.6em;
+      padding: 3px 9px;
+      border-radius: 100px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .member-row {
+      cursor: pointer;
+    }
+
+    .member-row:hover {
+      border-color: var(--accent-mid);
+    }
+
+    /* ─── MEMBER POPOVER ─────────────────────────────────── */
+    #member-popover {
+      display: none;
+      position: fixed;
+      z-index: 500;
+      background: var(--card);
+      border: 1px solid var(--accent-mid);
+      border-radius: 14px;
+      padding: 16px 18px;
+      min-width: 220px;
+      box-shadow: var(--shadow-pop);
+      animation: pop-in 0.15s ease;
+    }
+
+    #member-popover.open { display: block; }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.94) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .popover-name {
+      font-size: 0.82em;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .popover-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .popover-link {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 0.74em;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .popover-link:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .popover-link-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95em;
+      flex-shrink: 0;
+    }
+
+    /* ─── HISTÓRIA ──────────────────────────────────────── */
+    .hist-timeline {
+      position: relative;
+      padding: 8px 0 24px;
+    }
+
+    .hist-timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent), var(--border) 80%);
+      transform: translateX(-50%);
+    }
+
+    .hist-item {
+      display: grid;
+      grid-template-columns: 1fr 56px 1fr;
+      gap: 0;
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .hist-item:last-child { margin-bottom: 0; }
+
+    /* central node */
+    .hist-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 1;
+    }
+
+    .hist-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .hist-year {
+      font-size: 0.6em;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+    }
+
+    /* cards */
+    .hist-card {
+      background: linear-gradient(135deg, var(--card) 0%, rgba(34,211,238,0.03) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      transition: border-color 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hist-card:hover {
+      border-color: var(--accent-mid);
+      transform: translateY(-2px);
+    }
+
+    /* arrow toward center */
+    .hist-card.left::after,
+    .hist-card.right::before {
+      content: '';
+      position: absolute;
+      top: 22px;
+      border: 7px solid transparent;
+    }
+
+    .hist-card.left::after {
+      right: -14px;
+      border-left-color: var(--border);
+    }
+
+    .hist-card.right::before {
+      left: -14px;
+      border-right-color: var(--border);
+    }
+
+    .hist-empty { /* spacer on opposite side */ }
+
+    .hist-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.6em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 9px;
+      border-radius: 100px;
+      margin-bottom: 10px;
+    }
+
+    .hist-type-badge.foundation {
+      background: var(--hist-badge-purple-bg);
+      color: var(--hist-badge-purple-fg);
+      border: 1px solid var(--hist-badge-purple-bd);
+    }
+
+    .hist-type-badge.competition {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
+    }
+
+    .hist-type-badge.event {
+      background: var(--hist-badge-green-bg);
+      color: var(--hist-badge-green-fg);
+      border: 1px solid var(--hist-badge-green-bd);
+    }
+
+    .hist-card h3 {
+      font-size: 0.95em;
+      font-weight: 700;
+      margin-bottom: 7px;
+      line-height: 1.3;
+    }
+
+    .hist-card p {
+      font-size: 0.78em;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .hist-photo {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 14px;
+      object-fit: cover;
+      max-height: 180px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .hist-photo:hover { opacity: 0.85; }
+
+    /* photo lightbox */
+    #hist-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(var(--bg-rgb),0.94);
+      backdrop-filter: blur(12px);
+      z-index: 400;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #hist-lightbox.open { display: flex; }
+
+    #hist-lightbox img {
+      max-width: 100%;
+      max-height: 85vh;
+      border-radius: 14px;
+      object-fit: contain;
+      box-shadow: var(--shadow-xl);
+    }
+
+    #hist-lightbox-close {
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1em;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    #hist-lightbox-close:hover { border-color: var(--accent-mid); color: var(--text); }
+
+    #hist-empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85em;
+      padding: 48px 0;
+    }
+
+    /* responsive */
+    @media (max-width: 720px) {
+      .hist-timeline::before { left: 20px; }
+
+      .hist-item {
+        grid-template-columns: 40px 1fr;
+        grid-template-rows: auto;
+      }
+
+      .hist-node { align-items: flex-start; padding-top: 4px; }
+      .hist-year { writing-mode: horizontal-tb; transform: none; font-size: 0.58em; }
+
+      .hist-empty { display: none; }
+      .hist-card.left, .hist-card.right { grid-column: 2; }
+      .hist-card.left::after { display: none; }
+      .hist-card.right::before { display: none; }
+    }
+
+    /* ─── BLOG ──────────────────────────────────────────── */
+    .blog-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .blog-row {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: opacity 0.18s;
+    }
+
+    .blog-row:first-child { border-top: 1px solid var(--border); }
+    .blog-row:hover { opacity: 0.75; }
+
+    .blog-row-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .blog-cat {
+      font-size: 0.62em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+
+    .blog-row h3 {
+      font-size: 1.08em;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.015em;
+      color: var(--text);
+    }
+
+    .blog-excerpt {
+      font-size: 0.82em;
+      color: var(--muted);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .blog-meta {
+      font-size: 0.66em;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .blog-meta span { color: var(--border); margin: 0 5px; }
+
+    .blog-thumb {
+      width: 190px;
+      height: 124px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .blog-thumb-placeholder {
+      width: 190px;
+      height: 124px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(34,211,238,0.07) 100%);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+    }
+
+    /* ─── POST MODAL ─────────────────────────────────────── */
+    #post-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(var(--bg-rgb),0.92);
+      backdrop-filter: blur(12px);
+      z-index: 350;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 20px;
+      overflow-y: auto;
+    }
+
+    #post-overlay.open { display: flex; }
+
+    .post-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 680px;
+      position: relative;
+      animation: modal-in 0.2s ease;
+      margin: auto;
+    }
+
+    .post-modal-cover {
+      width: 100%;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 20px 20px 0 0;
+      display: block;
+    }
+
+    .post-modal-cover-placeholder {
+      height: 180px;
+      background: linear-gradient(135deg, var(--card) 0%, rgba(34,211,238,0.06) 100%);
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .post-modal-body {
+      padding: 32px 36px 40px;
+    }
+
+    .post-modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(var(--bg-rgb),0.7);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9em;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      z-index: 2;
+    }
+
+    .post-modal-close:hover { border-color: var(--accent-mid); }
+
+    .post-modal-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .post-modal-author {
+      font-size: 0.72em;
+      color: var(--muted);
+    }
+
+    .post-modal h2 {
+      font-size: 1.55em;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .post-content {
+      font-size: 0.88em;
+      color: var(--text-soft);
+      line-height: 1.85;
+    }
+
+    .post-content p { margin-bottom: 16px; }
+    .post-content p:last-child { margin-bottom: 0; }
+    .post-content strong { color: var(--text); }
+    .post-content em { color: var(--accent); font-style: normal; font-weight: 500; }
+    .post-content h3 { color: var(--text); font-size: 1.05em; margin: 24px 0 10px; }
+    .post-content ul { padding-left: 20px; margin-bottom: 16px; }
+    .post-content li { margin-bottom: 5px; }
+    .post-content a { color: var(--accent); text-decoration: none; }
+    .post-content a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .blog-row { gap: 16px; padding: 20px 0; }
+      .blog-thumb, .blog-thumb-placeholder { width: 110px; height: 76px; border-radius: 8px; }
+      .blog-row h3 { font-size: 0.9em; }
+      .blog-excerpt { -webkit-line-clamp: 2; line-clamp: 2; }
+      .post-modal-body { padding: 24px 20px 32px; }
+      .post-modal-cover { height: 180px; }
+      .post-modal h2 { font-size: 1.25em; }
+    }
+
+    /* ─── CONTATO ────────────────────────────────────────── */
+    .contato-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 56px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contato-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 240px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .contato-box h2 {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 12px;
+    }
+
+    .contato-box > p {
+      color: var(--muted);
+      font-size: 0.88em;
+      margin-bottom: 36px;
+    }
+
+    .contato-items {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .contato-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8em;
+      color: var(--muted);
+    }
+
+    .contato-item .ci-icon { font-size: 1.1em; }
+
+    .contato-profs {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .prof-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.76em;
+      color: var(--muted);
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      user-select: none;
+    }
+
+    .prof-tag:hover {
+      border-color: var(--accent-mid);
+      color: var(--text);
+    }
+
+    .prof-tag .prof-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .prof-email-tip {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: var(--card);
+      border: 1px solid var(--accent-mid);
+      border-radius: 10px;
+      padding: 7px 14px;
+      font-size: 0.78em;
+      color: var(--accent);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 20;
+      box-shadow: var(--shadow-md);
+    }
+
+    .prof-email-tip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--accent-mid);
+    }
+
+    .prof-tag:hover .prof-email-tip,
+    .prof-tag.tip-open .prof-email-tip {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .prof-mail-icon {
+      font-size: 0.9em;
+      opacity: 0.45;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    footer p { font-size: 0.72em; color: var(--muted); }
+
+    .obr-pill {
+      font-size: 0.7em;
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
+      padding: 4px 14px;
+      border-radius: 100px;
+    }
+
+    /* ─── THEME TOGGLE (IHC) ──────────────────────────────
+       Visibilidade do estado: ícone reflete o tema ativo.
+       Acessibilidade: role=switch + aria-checked, foco visível, 36px (≥ alvo mínimo).
+       Consistência: presente em todas as larguras de tela. */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin-left: 18px;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent-mid);
+      color: var(--accent);
+    }
+
+    .theme-toggle:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .theme-toggle svg {
+      width: 18px;
+      height: 18px;
+      position: absolute;
+      transition: opacity 0.25s ease, transform 0.35s ease;
+    }
+
+    /* dark ativo: mostra a lua; light ativo: mostra o sol */
+    [data-theme="dark"] .theme-toggle .icon-sun,
+    [data-theme="light"] .theme-toggle .icon-moon {
+      opacity: 0;
+      transform: rotate(-90deg) scale(0.6);
+    }
+    [data-theme="dark"] .theme-toggle .icon-moon,
+    [data-theme="light"] .theme-toggle .icon-sun {
+      opacity: 1;
+      transform: rotate(0) scale(1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .theme-toggle svg { transition: opacity 0.15s ease; transform: none !important; }
+    }
+
+    /* ─── SVG ILLUSTRATION OVERRIDES (tema light) ─────────
+       O robô do hero usa fills hex fixos. Mapeamos cada um para o equivalente
+       claro mantendo a leitura visual (frame, tela, sombras). */
+    [data-theme="light"] .robot-wrap svg [fill="#111120"]  { fill: #FFFFFF; }
+    [data-theme="light"] .robot-wrap svg [fill="#0D0D1C"]  { fill: #EEF1F7; }
+    [data-theme="light"] .robot-wrap svg [fill="#070710"]  { fill: #E2E5EE; }
+    [data-theme="light"] .robot-wrap svg [fill="#1C1C34"]  { fill: #C8CDDC; }
+    [data-theme="light"] .robot-wrap svg [stroke="#1C1C34"]{ stroke: #C8CDDC; }
+    [data-theme="light"] .robot-wrap svg [fill="#22D3EE"]  { fill: #0891B2; }
+    [data-theme="light"] .robot-wrap svg [stroke="#22D3EE"]{ stroke: #0891B2; }
+
+    /* ─── SCROLL REVEAL (IHC) ─────────────────────────────
+       Fade + slide curto, dispara uma vez quando o elemento entra na viewport.
+       Stagger por --reveal-delay (cascata de filhos). Respeita reduced-motion. */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+                  transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+      transition-delay: var(--reveal-delay, 0ms);
+      will-change: opacity, transform;
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ─── HAMBURGER ──────────────────────────────────── */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 6px;
+      background: none;
+      border: none;
+    }
+
+    .nav-hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+
+    .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .nav-mobile-menu {
+      display: none;
+      position: fixed;
+      top: 64px;
+      left: 0; right: 0;
+      background: rgba(var(--bg-rgb),0.97);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      z-index: 99;
+      padding: 20px 24px 28px;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-mobile-menu.open { display: flex; }
+
+    .nav-mobile-menu a {
+      display: block;
+      padding: 13px 14px;
+      margin: 2px 0;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 0.95em;
+      font-weight: 500;
+      transition: color 0.2s, background-color 0.2s;
+    }
+
+    .nav-mobile-menu a:hover { color: var(--accent); background: var(--accent-soft); }
+    .nav-mobile-menu a.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-mid);
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────── */
+
+    /* Tablet */
+    @media (max-width: 1024px) {
+      nav { padding: 0 28px; }
+
+      .hero-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 40px;
+      }
+
+      .hero-text .desc { max-width: 100%; }
+      .hero-actions { justify-content: center; }
+      .hero-stats { justify-content: center; }
+
+      .robot-wrap { order: -1; }
+      .robot-wrap svg { max-width: 180px; }
+
+      .sobre-grid .info-card {
+        max-width: calc((100% - 14px) / 2);
+      }
+
+      .teams-grid { grid-template-columns: repeat(2, 1fr); }
+
+      .section-wrap { padding: 52px 28px; }
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+
+      #hero { padding: 90px 20px 48px; min-height: auto; }
+
+      .hero-text h1 { font-size: 2.4em; }
+
+      .hero-stats {
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: flex-start;
+      }
+
+      .stat { min-width: calc(50% - 12px); }
+
+      .section-wrap { padding: 44px 20px; }
+
+      .section-title { font-size: 1.7em; }
+
+      .sobre-grid .info-card {
+        max-width: 100%;
+      }
+
+      .timeline {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .timeline::before { display: none; }
+
+      .tl-item { padding: 0; }
+
+      .tl-dot {
+        width: 52px;
+        height: 52px;
+        font-size: 1em;
+        margin-bottom: 14px;
+      }
+
+      .teams-grid { grid-template-columns: 1fr; }
+
+      .contato-box { padding: 32px 20px; }
+
+      .contato-items { flex-direction: column; align-items: center; gap: 12px; }
+
+      footer {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 24px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────── -->
+<nav>
+  <a href="#hero" class="nav-brand">
+    <span class="nav-brand-text">Clube de Robótica <span class="nav-brand-accent">JGP</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#sobre"      data-section="sobre">Sobre</a></li>
+    <li><a href="#cronograma" data-section="cronograma">Cronograma</a></li>
+    <li><a href="#equipes"    data-section="equipes">Equipes</a></li>
+    <li><a href="#historia"   data-section="historia">História</a></li>
+    <li><a href="#blog"       data-section="blog">Blog</a></li>
+    <li><a href="#contato"    data-section="contato">Contato</a></li>
+  </ul>
+  <button
+    id="theme-toggle"
+    class="theme-toggle"
+    type="button"
+    role="switch"
+    aria-checked="false"
+    aria-label="Alternar tema claro e escuro"
+    title="Alternar tema (claro/escuro)"
+    onclick="toggleTheme()">
+    <!-- Sol: visível no tema light -->
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <!-- Lua: visível no tema dark -->
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="nav-mobile-menu" id="mobile-menu">
+  <a href="#sobre"      data-section="sobre"      onclick="closeMenu()">Sobre</a>
+  <a href="#cronograma" data-section="cronograma" onclick="closeMenu()">Cronograma</a>
+  <a href="#equipes"    data-section="equipes"    onclick="closeMenu()">Equipes</a>
+  <a href="#historia"   data-section="historia"   onclick="closeMenu()">História</a>
+  <a href="#blog"       data-section="blog"       onclick="closeMenu()">Blog</a>
+  <a href="#contato"    data-section="contato"    onclick="closeMenu()">Contato</a>
+</div>
+
+<!-- ── HERO ─────────────────────────────────────── -->
+<section id="hero">
+  <canvas id="particles-canvas"></canvas>
+  <div class="hero-grid-bg"></div>
+  <div class="hero-vignette"></div>
+
+  <div class="hero-inner">
+    <div class="hero-text">
+      <span class="eyebrow"><span class="dot"></span> OBR 2026</span>
+      <h1>Clube de<br><span class="accent-text">Robótica JGP</span></h1>
+      <p class="hero-slogan">Transformando dados em conhecimento</p>
+      <p class="desc">Cinco equipes. Um objetivo. Construir robôs autônomos capazes de resgatar vítimas em ambientes de desastre — sem intervenção humana.</p>
+      <div class="hero-actions">
+        <a href="#equipes" class="btn btn-primary">Ver Equipes</a>
+        <a href="#cronograma" class="btn btn-ghost">Cronograma</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="num">5<span>×</span></div>
+          <div class="label">Equipes</div>
+        </div>
+        <div class="stat">
+          <div class="num">40<span>d</span></div>
+          <div class="label">de preparação</div>
+        </div>
+        <div class="stat">
+          <div class="num">4<span>+</span></div>
+          <div class="label">Fases de treino</div>
+        </div>
+        <div class="stat">
+          <div class="num">19<span>×</span></div>
+          <div class="label">Competidores</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="robot-wrap">
+      <!-- LEGO SPIKE Prime Robot -->
+      <svg viewBox="0 0 240 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-sm">
+            <feGaussianBlur stdDeviation="2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Antenna -->
+        <line x1="120" y1="76" x2="120" y2="48" stroke="#22D3EE" stroke-width="1.5" opacity="0.65"/>
+        <circle cx="120" cy="44" r="5" fill="#22D3EE" filter="url(#glow)"/>
+        <circle cx="120" cy="44" r="13" fill="#22D3EE" opacity="0.08"/>
+
+        <!-- Hub Body (SPIKE Prime hub) -->
+        <rect x="32" y="76" width="176" height="124" rx="18" fill="#111120" stroke="#22D3EE" stroke-width="1.5"/>
+        <!-- Top accent stripe -->
+        <rect x="32" y="76" width="176" height="10" rx="9" fill="#22D3EE" opacity="0.15"/>
+        <!-- Power indicator dot -->
+        <circle cx="120" cy="81" r="3" fill="#22D3EE" opacity="0.7" filter="url(#glow-sm)"/>
+
+        <!-- Screen area -->
+        <rect x="48" y="92" width="144" height="82" rx="10" fill="#070710" stroke="#1C1C34"/>
+
+        <!-- Left eye (pixel block) -->
+        <rect x="68" y="108" width="20" height="20" rx="4" fill="#22D3EE" opacity="0.88" filter="url(#glow-sm)"/>
+        <rect x="72" y="112" width="7" height="7" rx="1" fill="white" opacity="0.22"/>
+        <!-- Right eye -->
+        <rect x="152" y="108" width="20" height="20" rx="4" fill="#22D3EE" opacity="0.88" filter="url(#glow-sm)"/>
+        <rect x="156" y="112" width="7" height="7" rx="1" fill="white" opacity="0.22"/>
+
+        <!-- Smile (pixel arc) -->
+        <rect x="80" y="144" width="6" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="86" y="147" width="5" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="91" y="149" width="6" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="97" y="150" width="10" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="107" y="149" width="6" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="113" y="147" width="5" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+        <rect x="118" y="144" width="6" height="5" rx="1" fill="#22D3EE" opacity="0.65"/>
+
+        <!-- Port row (6 ports like SPIKE Prime) -->
+        <rect x="48" y="180" width="144" height="20" rx="4" fill="#0D0D1C"/>
+        <rect x="54"  y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <rect x="76"  y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <rect x="98"  y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <rect x="120" y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <rect x="142" y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <rect x="164" y="184" width="18" height="12" rx="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.4" stroke-opacity="0.25"/>
+        <!-- Active port indicator -->
+        <circle cx="63"  cy="190" r="2" fill="#22D3EE" opacity="0.45"/>
+        <circle cx="107" cy="190" r="2" fill="#22D3EE" opacity="0.25"/>
+
+        <!-- Left Motor Arm -->
+        <rect x="4" y="138" width="30" height="58" rx="10" fill="#111120" stroke="#22D3EE" stroke-width="1.2"/>
+        <rect x="10" y="150" width="18" height="8" rx="3" fill="#0D0D1C"/>
+        <rect x="10" y="162" width="18" height="8" rx="3" fill="#0D0D1C"/>
+        <rect x="12" y="152" width="8" height="4" rx="1" fill="#22D3EE" opacity="0.2"/>
+        <!-- Motor cable -->
+        <path d="M32 158 Q39 158 40 168" stroke="#1C1C34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+        <!-- Left Wheel -->
+        <circle cx="26" cy="220" r="26" fill="#0D0D1C" stroke="#22D3EE" stroke-width="1.5"/>
+        <circle cx="26" cy="220" r="17" fill="#111120" stroke="#1C1C34"/>
+        <!-- Tread pattern -->
+        <circle cx="26" cy="220" r="23" fill="none" stroke="#1C1C34" stroke-width="2.5" stroke-dasharray="5 9"/>
+        <!-- Spokes -->
+        <line x1="26" y1="203" x2="26" y2="194" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="26" y1="237" x2="26" y2="246" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="9"  y1="220" x2="0"  y2="220" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="43" y1="220" x2="52" y2="220" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <!-- Hub cap -->
+        <circle cx="26" cy="220" r="7" fill="#22D3EE" opacity="0.12"/>
+        <circle cx="26" cy="220" r="3.5" fill="#22D3EE" opacity="0.5"/>
+
+        <!-- Right Motor Arm -->
+        <rect x="206" y="138" width="30" height="58" rx="10" fill="#111120" stroke="#22D3EE" stroke-width="1.2"/>
+        <rect x="212" y="150" width="18" height="8" rx="3" fill="#0D0D1C"/>
+        <rect x="212" y="162" width="18" height="8" rx="3" fill="#0D0D1C"/>
+        <rect x="220" y="152" width="8" height="4" rx="1" fill="#22D3EE" opacity="0.2"/>
+        <!-- Motor cable -->
+        <path d="M208 158 Q201 158 200 168" stroke="#1C1C34" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+        <!-- Right Wheel -->
+        <circle cx="214" cy="220" r="26" fill="#0D0D1C" stroke="#22D3EE" stroke-width="1.5"/>
+        <circle cx="214" cy="220" r="17" fill="#111120" stroke="#1C1C34"/>
+        <circle cx="214" cy="220" r="23" fill="none" stroke="#1C1C34" stroke-width="2.5" stroke-dasharray="5 9"/>
+        <line x1="214" y1="203" x2="214" y2="194" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="214" y1="237" x2="214" y2="246" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="197" y1="220" x2="188" y2="220" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <line x1="231" y1="220" x2="240" y2="220" stroke="#22D3EE" stroke-width="1" opacity="0.2"/>
+        <circle cx="214" cy="220" r="7" fill="#22D3EE" opacity="0.12"/>
+        <circle cx="214" cy="220" r="3.5" fill="#22D3EE" opacity="0.5"/>
+
+        <!-- Bottom chassis rail -->
+        <rect x="48" y="196" width="144" height="14" rx="6" fill="#0D0D1C" stroke="#1C1C34"/>
+        <!-- LEGO stud dots on chassis -->
+        <circle cx="68"  cy="203" r="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.5" stroke-opacity="0.2"/>
+        <circle cx="88"  cy="203" r="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.5" stroke-opacity="0.2"/>
+        <circle cx="120" cy="203" r="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.5" stroke-opacity="0.2"/>
+        <circle cx="152" cy="203" r="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.5" stroke-opacity="0.2"/>
+        <circle cx="172" cy="203" r="3" fill="#1C1C34" stroke="#22D3EE" stroke-width="0.5" stroke-opacity="0.2"/>
+
+        <!-- Color Sensor (front) -->
+        <rect x="88" y="210" width="64" height="32" rx="12" fill="#111120" stroke="#22D3EE" stroke-width="1.2"/>
+        <!-- Sensor lens -->
+        <circle cx="120" cy="226" r="11" fill="#070710" stroke="#22D3EE" stroke-width="0.8" stroke-opacity="0.5"/>
+        <circle cx="120" cy="226" r="7" fill="#22D3EE" opacity="0.1" filter="url(#glow)"/>
+        <circle cx="120" cy="226" r="4" fill="#22D3EE" opacity="0.55" filter="url(#glow-sm)"/>
+        <circle cx="120" cy="226" r="2" fill="#22D3EE" opacity="0.95"/>
+        <!-- Sensor side dots (IR emitters) -->
+        <circle cx="100" cy="226" r="2.5" fill="#22D3EE" opacity="0.3"/>
+        <circle cx="140" cy="226" r="2.5" fill="#22D3EE" opacity="0.3"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ── SOBRE ──────────────────────────────────── -->
+<div class="section-wrap" id="sobre">
+  <p class="section-label">Sobre</p>
+  <h2 class="section-title">O que é a OBR?</h2>
+  <p class="obr-intro">
+    A <strong>Olimpíada Brasileira de Robótica</strong> é uma competição nacional, gratuita e aberta a estudantes do ensino fundamental, médio e técnico de todo o país.
+    Organizada pela Sociedade Brasileira de Computação, ela estimula jovens a aprender programação, eletrônica e mecânica resolvendo desafios inspirados em problemas reais.
+    Os melhores classificados avançam pelas etapas regional, estadual e nacional — e podem chegar até a <strong>RoboCup Mundial</strong>.
+  </p>
+
+  <p class="modalidades-label">Modalidades</p>
+  <h3 class="modalidades-title">Como a OBR é disputada</h3>
+  <div class="sobre-grid">
+
+    <div class="info-card">
+      <div class="ic-icon">🤖</div>
+      <h3>Robô Autônomo</h3>
+      <p>O robô deve percorrer todo o trajeto e executar as tarefas sem qualquer intervenção humana após o início da prova.</p>
+      <button class="learn-btn" onclick="toggleInfo(this)">Saiba mais ↓</button>
+      <div class="info-expand">
+        <div class="info-expand-inner">
+          O robô autônomo é o coração da competição. Ele precisa tomar todas as decisões sozinho — desviar de obstáculos, identificar caminhos, adaptar-se às condições da pista. Nenhum controle remoto, nenhum comando humano durante a prova. A lógica de programação define tudo. Quanto mais robusto o código, mais confiável o desempenho.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="ic-icon">⚽</div>
+      <h3>Resgate de Vítimas</h3>
+      <p>As "vítimas" são bolinhas que precisam ser encontradas, coletadas e depositadas no local correto dentro do tempo.</p>
+      <button class="learn-btn" onclick="toggleInfo(this)">Saiba mais ↓</button>
+      <div class="info-expand">
+        <div class="info-expand-inner">
+          Distribuídas pela pista, as bolinhas simulam vítimas de um desastre. O robô deve detectá-las usando sensores (cor, distância, câmera), coletá-las com um mecanismo de garra ou sucção e depositá-las na zona de resgate designada. Cada vítima resgatada corretamente vale pontos. A precisão e a velocidade fazem a diferença no placar.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="ic-icon">🏆</div>
+      <h3>Etapas da Competição</h3>
+      <p>Regional → Estadual → Nacional. Os melhores do Nível 2 concorrem a vagas na RoboCup Mundial.</p>
+      <button class="learn-btn" onclick="toggleInfo(this)">Saiba mais ↓</button>
+      <div class="info-expand">
+        <div class="info-expand-inner">
+          A OBR começa nas etapas Regionais ou Estaduais. As melhores equipes avançam à fase Nacional, realizada em uma cidade diferente a cada ano. Os destaques do Nível 2 nas categorias presenciais concorrem a vagas na <strong style="color:var(--text)">RoboCup Mundial</strong> — a maior competição de robótica do planeta. Além das vagas, há medalhas, certificados e bolsas de Iniciação Científica Júnior do CNPq.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="ic-icon">🎭</div>
+      <h3>Robótica Artística</h3>
+      <p>Apresentação artística com robôs: dança, teatro, mágica ou show de comédia. Criatividade e programação em cena.</p>
+      <button class="learn-btn" onclick="toggleInfo(this)">Saiba mais ↓</button>
+      <div class="info-expand">
+        <div class="info-expand-inner">
+          Na Robótica Artística, as equipes criam uma apresentação com robôs em um formato livre — dança, teatro, mágica, show de comédia e mais. A avaliação considera criatividade, sincronia, programação e impacto cênico. É uma modalidade presencial que pode ser escolhida <em>em vez</em> da Robótica de Resgate. As equipes participantes também podem competir na categoria Simulação.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="ic-icon">💻</div>
+      <h3>Robótica Virtual</h3>
+      <p>Crie um robô virtual para competir em provas simuladas de resgate. Uma forma acessível de participar da OBR.</p>
+      <button class="learn-btn" onclick="toggleInfo(this)">Saiba mais ↓</button>
+      <div class="info-expand">
+        <div class="info-expand-inner">
+          A Robótica Virtual (ou Simulação) permite que equipes compitam com robôs digitais em ambientes simulados de resgate. É uma oportunidade mais acessível — sem necessidade de hardware físico. Pode ser combinada com qualquer uma das modalidades presenciais, ou seja, a equipe pode competir tanto no Resgate ou Artístico <em>e</em> na Simulação ao mesmo tempo.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CRONOGRAMA ─────────────────────────────── -->
+<div class="section-wrap" id="cronograma">
+  <p class="section-label">Cronograma</p>
+  <h2 class="section-title">Plano de Preparação</h2>
+  <p class="section-desc">40 dias em 4 fases a partir de 11 de maio. Clique em cada fase para destacar. As etapas não são travadas — a equipe pode voltar a uma fase anterior sempre que necessário.</p>
+  <div class="timeline">
+
+    <div class="tl-item active" onclick="activatePhase(this)">
+      <div class="tl-dot">01</div>
+      <h4>Pesquisa e Design</h4>
+      <span class="tl-date">11 – 18 de maio</span>
+      <ul class="tl-list">
+        <li>Leitura das regras</li>
+        <li>Pesquisa de modelos</li>
+        <li>Definição de chassis e sensores</li>
+        <li>Esboço do robô</li>
+      </ul>
+    </div>
+
+    <div class="tl-item" onclick="activatePhase(this)">
+      <div class="tl-dot">02</div>
+      <h4>Montagem Física</h4>
+      <span class="tl-date">19 – 30 de maio</span>
+      <ul class="tl-list">
+        <li>Montagem do chassi</li>
+        <li>Instalação dos motores</li>
+        <li>Conexão dos sensores</li>
+        <li>Teste de movimentação</li>
+      </ul>
+    </div>
+
+    <div class="tl-item" onclick="activatePhase(this)">
+      <div class="tl-dot">03</div>
+      <h4>Programação</h4>
+      <span class="tl-date">31 mai – 10 jun</span>
+      <ul class="tl-list">
+        <li>Movimentação autônoma</li>
+        <li>Leitura de sensores</li>
+        <li>Coleta das bolinhas</li>
+        <li>Depósito no alvo</li>
+      </ul>
+    </div>
+
+    <div class="tl-item" onclick="activatePhase(this)">
+      <div class="tl-dot">04</div>
+      <h4>Testes e Ajustes</h4>
+      <span class="tl-date">11 – 20 de junho</span>
+      <ul class="tl-list">
+        <li>Rodadas na pista simulada</li>
+        <li>Cronometragem</li>
+        <li>Correção de falhas</li>
+        <li>Simulação final</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── EQUIPES ────────────────────────────────── -->
+<div class="section-wrap" id="equipes">
+  <p class="section-label">Equipes</p>
+  <h2 class="section-title">Conheça os Times</h2>
+  <p class="section-desc">Cinco equipes, cinco estratégias. Clique em um time para ver seus membros e funções.</p>
+  <div class="teams-grid" id="teams-grid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0;font-size:0.85em;">Carregando equipes…</div>
+  </div>
+</div>
+
+<!-- ── HISTÓRIA ───────────────────────────────── -->
+<div class="section-wrap" id="historia">
+  <p class="section-label">História</p>
+  <h2 class="section-title">Nossa Trajetória</h2>
+  <p class="section-desc">Da fundação do clube às competições — os momentos que moldaram o Clube de Robótica JGP.</p>
+  <div class="hist-timeline" id="hist-timeline">
+    <div id="hist-empty-state">Carregando história…</div>
+  </div>
+</div>
+
+<!-- ── LIGHTBOX FOTO ──────────────────────────── -->
+<div id="hist-lightbox" onclick="closeHistLightbox()">
+  <button id="hist-lightbox-close" onclick="closeHistLightbox()">✕</button>
+  <img id="hist-lightbox-img" src="" alt="">
+</div>
+
+<!-- ── BLOG ───────────────────────────────────── -->
+<div class="section-wrap" id="blog">
+  <p class="section-label">Blog</p>
+  <h2 class="section-title">Novidades do Clube</h2>
+  <p class="section-desc">Relatórios de desenvolvimento, tecnologia e novidades da área — publicados semanalmente.</p>
+  <div class="blog-list" id="blog-grid">
+    <div style="text-align:center;color:var(--muted);padding:40px 0;font-size:0.85em;">Carregando posts…</div>
+  </div>
+</div>
+
+<!-- ── POST MODAL ─────────────────────────────── -->
+<div id="post-overlay" onclick="handlePostOverlayClick(event)">
+  <div class="post-modal">
+    <button class="post-modal-close" onclick="closePost()">✕</button>
+    <div id="post-modal-inner"></div>
+  </div>
+</div>
+
+<!-- ── CONTATO ────────────────────────────────── -->
+<div class="section-wrap" id="contato">
+  <div class="contato-box">
+    <h2>Faça Parte</h2>
+    <p>Quer saber mais sobre o clube ou a OBR? Fale com os professores responsáveis.</p>
+    <div class="contato-items">
+      <div class="contato-item"><span class="ci-icon">🏫</span> Escola Estadual Júlia Gonçalves Passarinho</div>
+      <div class="contato-item"><span class="ci-icon">📍</span> Rua Dom Aquino, 40 — Centro</div>
+      <div class="contato-item"><span class="ci-icon">🔗</span> obr.robocup.org.br</div>
+    </div>
+    <div class="contato-profs">
+      <div class="prof-tag" onclick="openEmail('jorge.fxvx@gmail.com')">
+        <span class="prof-dot"></span> Prof. Jorge Frias <span class="prof-mail-icon">✉</span>
+        <span class="prof-email-tip">jorge.fxvx@gmail.com</span>
+      </div>
+      <div class="prof-tag" onclick="openEmail('jfelipe7.souza@gmail.com')">
+        <span class="prof-dot"></span> Prof. João Felipe <span class="prof-mail-icon">✉</span>
+        <span class="prof-email-tip">jfelipe7.souza@gmail.com</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────── -->
+<footer>
+  <p>© 2026 Clube de Robótica JGP — Escola Estadual Júlia Gonçalves Passarinho</p>
+  <span class="obr-pill">OBR 2026</span>
+</footer>
+
+<!-- ── MEMBER POPOVER ─────────────────────────── -->
+<div id="member-popover">
+  <p class="popover-name" id="pop-name"></p>
+  <div class="popover-links" id="pop-links"></div>
+</div>
+
+<!-- ── MODAL EQUIPES ──────────────────────────── -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    <div class="modal-head">
+      <div class="modal-team-icon" id="m-icon"></div>
+      <div>
+        <h2 id="m-title"></h2>
+        <p class="modal-sub-text" id="m-sub"></p>
+      </div>
+    </div>
+    <div class="members" id="m-members"></div>
+  </div>
+</div>
+
+<script>
+/* ── Particles ──────────────────────────────── */
+const cvs = document.getElementById('particles-canvas');
+const cx  = cvs.getContext('2d');
+let pts   = [];
+
+function resize() {
+  cvs.width  = cvs.offsetWidth;
+  cvs.height = cvs.offsetHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+for (let i = 0; i < 55; i++) {
+  pts.push({
+    x:  Math.random() * cvs.width,
+    y:  Math.random() * cvs.height,
+    vx: (Math.random() - 0.5) * 0.28,
+    vy: (Math.random() - 0.5) * 0.28,
+    r:  Math.random() * 1.4 + 0.4,
+  });
+}
+
+function getParticleColors() {
+  const css = getComputedStyle(document.documentElement);
+  const dot  = css.getPropertyValue('--particle').trim() || 'rgba(34,211,238,0.45)';
+  const line = css.getPropertyValue('--particle-line').trim() || '34,211,238';
+  return { dot, line };
+}
+
+(function draw() {
+  const { dot, line } = getParticleColors();
+  cx.clearRect(0, 0, cvs.width, cvs.height);
+  pts.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = cvs.width;
+    if (p.x > cvs.width)  p.x = 0;
+    if (p.y < 0) p.y = cvs.height;
+    if (p.y > cvs.height) p.y = 0;
+    cx.beginPath();
+    cx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    cx.fillStyle = dot;
+    cx.fill();
+  });
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const dx = pts[i].x - pts[j].x;
+      const dy = pts[i].y - pts[j].y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 110) {
+        cx.beginPath();
+        cx.moveTo(pts[i].x, pts[i].y);
+        cx.lineTo(pts[j].x, pts[j].y);
+        cx.strokeStyle = `rgba(${line},${0.1*(1-d/110)})`;
+        cx.lineWidth = 0.5;
+        cx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ── Theme toggle (IHC) ─────────────────────────
+   - Persiste a escolha do usuário em localStorage (controle do usuário).
+   - Atualiza aria-checked (visibilidade do estado para leitores de tela).
+   - Adiciona classe .theme-transitioning durante a troca para animar suavemente
+     (Nielsen: feedback) sem disparar transições em hover/focus do dia a dia.
+   - Respeita prefers-color-scheme até que o usuário faça uma escolha explícita. */
+function applyTheme(theme, opts) {
+  opts = opts || {};
+  const html = document.documentElement;
+  if (opts.animate) html.classList.add('theme-transitioning');
+  html.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
+    btn.setAttribute('aria-label',
+      theme === 'light' ? 'Mudar para tema escuro' : 'Mudar para tema claro');
+  }
+  if (opts.animate) {
+    setTimeout(() => html.classList.remove('theme-transitioning'), 350);
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  applyTheme(next, { animate: true });
+}
+
+/* Sincroniza o estado inicial do botão com o tema aplicado pelo pre-paint. */
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
+/* Acompanha mudanças do SO se o usuário ainda não escolheu manualmente. */
+if (window.matchMedia) {
+  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  const onChange = e => {
+    if (!localStorage.getItem('theme')) {
+      applyTheme(e.matches ? 'light' : 'dark', { animate: true });
+    }
+  };
+  mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange);
+}
+
+/* ── Scroll reveal (IntersectionObserver) ─────
+   Aplica .reveal automaticamente em alvos selecionados, com stagger
+   (cascata) entre irmãos. Dispara uma única vez por elemento. */
+(function setupReveal() {
+  const reduce = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  // Alvos individuais (animam sozinhos, sem stagger)
+  const SOLO = [
+    '.section-label', '.section-title', '.section-desc',
+    '.obr-intro', '.modalidades-label', '.modalidades-title',
+    '.contato-box',
+  ];
+
+  // Alvos em grupo (cada filho recebe um delay incremental)
+  const GROUPS = [
+    { parent: '.sobre-grid',  child: '.info-card',  step: 80 },
+    { parent: '.timeline',    child: '.tl-item',    step: 90 },
+    { parent: '.teams-grid',  child: '.team-card',  step: 80 },
+    { parent: '.hist-timeline', child: '.hist-item', step: 90 },
+    { parent: '.blog-list',   child: '.blog-row',   step: 70 },
+  ];
+
+  document.querySelectorAll(SOLO.join(',')).forEach(el => el.classList.add('reveal'));
+
+  GROUPS.forEach(({ parent, child, step }) => {
+    document.querySelectorAll(parent).forEach(p => {
+      p.querySelectorAll(child).forEach((el, i) => {
+        el.classList.add('reveal');
+        el.style.setProperty('--reveal-delay', (i * step) + 'ms');
+      });
+    });
+  });
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Para conteúdo carregado via Supabase (equipes, blog), reaplica depois do load.
+  window.applyRevealTo = function (root) {
+    if (!root) return;
+    root.querySelectorAll('.team-card, .blog-row, .hist-item').forEach((el, i) => {
+      if (el.classList.contains('reveal')) return;
+      el.classList.add('reveal');
+      el.style.setProperty('--reveal-delay', (i * 70) + 'ms');
+      io.observe(el);
+    });
+  };
+})();
+
+/* ── Scroll-spy: marca o link da seção ativa na navbar ─────
+   IHC – feedback de localização ("você está aqui"). Observa cada
+   seção; o link com mais visibilidade na viewport recebe .active. */
+(function setupScrollSpy() {
+  const sections = ['sobre','cronograma','equipes','historia','blog','contato']
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
+  if (!sections.length || !('IntersectionObserver' in window)) return;
+
+  const visibility = new Map();
+
+  function updateActive() {
+    let bestId = null, bestRatio = 0;
+    visibility.forEach((ratio, id) => {
+      if (ratio > bestRatio) { bestRatio = ratio; bestId = id; }
+    });
+    document.querySelectorAll('a[data-section]').forEach(a => {
+      a.classList.toggle('active', a.dataset.section === bestId);
+    });
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      visibility.set(entry.target.id, entry.intersectionRatio);
+    });
+    updateActive();
+  }, {
+    // Considera "ativa" a seção com maior área visível na faixa central da tela
+    rootMargin: '-30% 0px -45% 0px',
+    threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+  });
+
+  sections.forEach(s => io.observe(s));
+})();
+
+/* ── Sobre: expandir card ───────────────────── */
+function toggleInfo(btn) {
+  const expand = btn.nextElementSibling;
+  const isOpen = expand.classList.contains('open');
+  expand.classList.toggle('open');
+  btn.textContent = isOpen ? 'Saiba mais ↓' : 'Fechar ↑';
+}
+
+/* ── Cronograma: fase ativa ─────────────────── */
+function activatePhase(el) {
+  document.querySelectorAll('.tl-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Supabase ───────────────────────────────── */
+const SUPABASE_URL = 'https://wqpelifwwzshtntboeib.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcGVsaWZ3d3pzaHRudGJvZWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjkxODksImV4cCI6MjA5MzcwNTE4OX0.yWkCVGJzoeV4svgSr8c-rSLww6UhfxKpipRYTmZLte4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let TEAMS = {};
+
+async function loadTeams() {
+  const { data: teams } = await sb
+    .from('teams')
+    .select('*, members(id, name, role, badge, display_order)')
+    .order('display_order');
+
+  if (!teams) return;
+
+  TEAMS = {};
+  teams.forEach(t => {
+    t.members.sort((a, b) => a.display_order - b.display_order);
+    TEAMS[t.slug] = t;
+  });
+
+  const grid = document.getElementById('teams-grid');
+  grid.innerHTML = teams.map(t => `
+    <div class="team-card" onclick="openModal('${t.slug}')">
+      <div class="team-icon-wrap">${t.icon}</div>
+      <h3>${t.name}</h3>
+      <p class="team-count">${t.members.length} integrante${t.members.length !== 1 ? 's' : ''}</p>
+      <div class="member-chips">
+        ${t.members.map(m => `<span class="chip">${m.name}</span>`).join('')}
+      </div>
+      <p class="card-cta">Ver equipe →</p>
+    </div>
+  `).join('');
+  if (window.applyRevealTo) window.applyRevealTo(grid);
+}
+
+loadTeams();
+
+/* ── Modal ──────────────────────────────────── */
+function openModal(slug) {
+  const t = TEAMS[slug];
+  if (!t) return;
+  closeMemberPopover();
+  document.getElementById('m-icon').textContent  = t.icon;
+  document.getElementById('m-title').textContent = t.name;
+  document.getElementById('m-sub').textContent   = `${t.members.length} integrante${t.members.length !== 1 ? 's' : ''}`;
+  document.getElementById('m-members').innerHTML = t.members.map(m => `
+    <div class="member-row" onclick="openMemberPopover(event, '${m.name.replace(/'/g, "\\'")}')">
+      <div class="avatar">${m.name[0]}</div>
+      <div class="member-info">
+        <p class="member-name">${m.name}</p>
+        <p class="member-role">${m.role}</p>
+      </div>
+      <span class="badge">${m.badge}</span>
+    </div>
+  `).join('');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal() {
+  closeMemberPopover();
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ── Member Popover ─────────────────────────── */
+function slugify(name) {
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, '.');
+}
+
+function openMemberPopover(e, name) {
+  e.stopPropagation();
+  const pop = document.getElementById('member-popover');
+  const slug = slugify(name);
+  const email = `${slug}@escolajgp.edu.br`;
+  const github = `github.com/${slug.replace(/\./g, '-')}`;
+
+  document.getElementById('pop-name').textContent = name;
+  document.getElementById('pop-links').innerHTML = `
+    <a class="popover-link" href="mailto:${email}">
+      <span class="popover-link-icon">✉️</span>
+      <span>${email}</span>
+    </a>
+    <a class="popover-link" href="https://${github}" target="_blank" rel="noopener">
+      <span class="popover-link-icon">🐙</span>
+      <span>${github}</span>
+    </a>
+  `;
+
+  pop.classList.remove('open');
+  pop.style.display = 'block';
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pw = pop.offsetWidth;
+  const ph = pop.offsetHeight;
+  let top  = rect.bottom + 8;
+  let left = rect.left;
+
+  if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+  if (top + ph > window.innerHeight - 12) top = rect.top - ph - 8;
+
+  pop.style.top  = top  + 'px';
+  pop.style.left = left + 'px';
+  pop.classList.add('open');
+}
+
+function closeMemberPopover() {
+  const pop = document.getElementById('member-popover');
+  pop.classList.remove('open');
+  pop.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  const pop = document.getElementById('member-popover');
+  if (pop.classList.contains('open') && !pop.contains(e.target)) {
+    closeMemberPopover();
+  }
+});
+
+/* ── Blog ───────────────────────────────────── */
+const CAT_ICONS = {
+  tecnologia:    '💡',
+  desenvolvimento: '🛠',
+  robotica:      '🤖',
+  novidades:     '📡',
+  geral:         '📝',
+};
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function contentToHtml(text) {
+  return text
+    .split(/\n\n+/)
+    .map(p => `<p>${p.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>')}</p>`)
+    .join('');
+}
+
+async function loadBlog() {
+  const { data: posts } = await sb
+    .from('blog_posts')
+    .select('id, title, excerpt, cover_url, category, author, created_at')
+    .eq('published', true)
+    .order('display_order');
+
+  const grid = document.getElementById('blog-grid');
+
+  if (!posts || posts.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0;font-size:0.85em;">Nenhum post publicado ainda.</div>';
+    return;
+  }
+
+  grid.innerHTML = posts.map(p => {
+    const icon = CAT_ICONS[p.category] || '📝';
+    const thumb = p.cover_url
+      ? `<img class="blog-thumb" src="${p.cover_url}" alt="${p.title}" loading="lazy">`
+      : `<div class="blog-thumb-placeholder">${icon}</div>`;
+    return `
+      <div class="blog-row" onclick="openPost('${p.id}')">
+        <div class="blog-row-body">
+          <span class="blog-cat">${icon} ${p.category}</span>
+          <h3>${p.title}</h3>
+          ${p.excerpt ? `<p class="blog-excerpt">${p.excerpt}</p>` : ''}
+          <p class="blog-meta">${formatDate(p.created_at)}<span>·</span>${p.author}</p>
+        </div>
+        ${thumb}
+      </div>`;
+  }).join('');
+  if (window.applyRevealTo) window.applyRevealTo(grid);
+}
+
+loadBlog();
+
+async function openPost(id) {
+  const { data: p } = await sb.from('blog_posts').select('*').eq('id', id).single();
+  if (!p) return;
+  const icon = CAT_ICONS[p.category] || '📝';
+  const cover = p.cover_url
+    ? `<img class="post-modal-cover" src="${p.cover_url}" alt="${p.title}">`
+    : `<div class="post-modal-cover-placeholder">${icon}</div>`;
+  document.getElementById('post-modal-inner').innerHTML = `
+    ${cover}
+    <div class="post-modal-body">
+      <div class="post-modal-meta">
+        <span class="blog-cat">${icon} ${p.category}</span>
+        <span class="post-modal-author">por ${p.author} · ${formatDate(p.created_at)}</span>
+      </div>
+      <h2>${p.title}</h2>
+      <div class="post-content">${contentToHtml(p.content)}</div>
+    </div>`;
+  document.getElementById('post-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePost() {
+  document.getElementById('post-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handlePostOverlayClick(e) {
+  if (e.target === document.getElementById('post-overlay')) closePost();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePost(); });
+
+/* ── Professor email ────────────────────────── */
+function openEmail(addr) {
+  window.location.href = 'mailto:' + addr;
+}
+
+/* ── História ───────────────────────────────── */
+const TYPE_META = {
+  foundation:  { label: '🏛 Fundação',    cls: 'foundation' },
+  competition: { label: '🏆 Competição',  cls: 'competition' },
+  event:       { label: '⭐ Evento',       cls: 'event' },
+};
+
+async function loadHistory() {
+  const { data: events } = await sb
+    .from('history_events')
+    .select('*')
+    .order('display_order');
+
+  const tl = document.getElementById('hist-timeline');
+
+  if (!events || events.length === 0) {
+    tl.innerHTML = '<div id="hist-empty-state">Nenhum evento cadastrado ainda.</div>';
+    return;
+  }
+
+  tl.innerHTML = events.map((ev, i) => {
+    const isLeft = i % 2 === 0;
+    const meta = TYPE_META[ev.type] || TYPE_META.event;
+    const photoHtml = ev.photo_url
+      ? `<img class="hist-photo" src="${ev.photo_url}" alt="${ev.title}" loading="lazy" onclick="openHistLightbox('${ev.photo_url}','${ev.title.replace(/'/g,"\\'")}');event.stopPropagation()">`
+      : '';
+
+    const card = `
+      <div class="hist-card ${isLeft ? 'left' : 'right'}">
+        <span class="hist-type-badge ${meta.cls}">${meta.label}</span>
+        <h3>${ev.title}</h3>
+        ${ev.description ? `<p>${ev.description}</p>` : ''}
+        ${photoHtml}
+      </div>`;
+
+    return `
+      <div class="hist-item">
+        ${isLeft ? card : '<div class="hist-empty"></div>'}
+        <div class="hist-node">
+          <div class="hist-dot"></div>
+          <span class="hist-year">${ev.year}</span>
+        </div>
+        ${isLeft ? '<div class="hist-empty"></div>' : card}
+      </div>`;
+  }).join('');
+  if (window.applyRevealTo) window.applyRevealTo(tl);
+}
+
+loadHistory();
+
+function openHistLightbox(url, alt) {
+  const lb = document.getElementById('hist-lightbox');
+  document.getElementById('hist-lightbox-img').src = url;
+  document.getElementById('hist-lightbox-img').alt = alt;
+  lb.classList.add('open');
+}
+
+function closeHistLightbox() {
+  document.getElementById('hist-lightbox').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeHistLightbox();
+});
+
+/* ── Mobile menu ────────────────────────────── */
+function toggleMenu() {
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mobile-menu');
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+
+function closeMenu() {
+  document.getElementById('hamburger').classList.remove('open');
+  document.getElementById('mobile-menu').classList.remove('open');
+}
+</script>
+</body>
+</html>

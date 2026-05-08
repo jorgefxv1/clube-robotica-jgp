@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Credenciais / variáveis de ambiente
+.env
+.env.*
+*.key
+*.pem
+
+# Logs
+*.log
+
+# Editores / IDEs
+.vscode/
+.idea/
+
+# Dependências (caso futuramente entre build)
+node_modules/
+dist/
+build/
+
+# Arquivos temporários
+*.swp
+*.tmp
+*~

@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Clube de Robótica JGP</title>
+  <script>
+    /* Pre-paint: aplica o tema antes do CSS pintar — evita FOUC.
+       Usa a chave 'theme' (compartilhada com robotica-site.html). */
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        document.documentElement.setAttribute('data-theme', saved || (prefersLight ? 'light' : 'dark'));
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root, [data-theme="dark"] {
+      --bg:          #07070F;
+      --bg-rgb:      7,7,15;
+      --surface:     #0D0D1C;
+      --card:        #111120;
+      --border:      #1C1C34;
+      --text:        #F0F0FA;
+      --muted:       #6A6A88;
+      --accent:      #22D3EE;
+      --accent-soft: rgba(34,211,238,0.07);
+      --accent-mid:  rgba(34,211,238,0.22);
+      --accent-glow: rgba(34,211,238,0.35);
+      --red:         #F87171;
+      --red-soft:    rgba(248,113,113,0.08);
+      --green:       #34D399;
+      --btn-fg:      #07070F;
+      --shadow-pop:  0 12px 32px rgba(0,0,0,0.35);
+      color-scheme: dark;
+    }
+
+    [data-theme="light"] {
+      --bg:          #F6F7FB;
+      --bg-rgb:      246,247,251;
+      --surface:     #FFFFFF;
+      --card:        #FFFFFF;
+      --border:      #DCDEE8;
+      --text:        #0F1020;
+      --muted:       #5A5C76;
+      --accent:      #0891B2;
+      --accent-soft: rgba(8,145,178,0.07);
+      --accent-mid:  rgba(8,145,178,0.32);
+      --accent-glow: rgba(8,145,178,0.25);
+      --red:         #DC2626;
+      --red-soft:    rgba(220,38,38,0.08);
+      --green:       #047857;
+      --btn-fg:      #FFFFFF;
+      --shadow-pop:  0 12px 28px rgba(15,16,32,0.10);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    html.theme-transitioning,
+    html.theme-transitioning *,
+    html.theme-transitioning *::before,
+    html.theme-transitioning *::after {
+      transition: background-color 0.3s ease, background 0.3s ease,
+                  color 0.3s ease, border-color 0.3s ease,
+                  box-shadow 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html.theme-transitioning,
+      html.theme-transitioning *,
+      html.theme-transitioning *::before,
+      html.theme-transitioning *::after { transition: none !important; }
+    }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      position: relative;
+      transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover { border-color: var(--accent-mid); color: var(--accent); }
+    .theme-toggle:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .theme-toggle svg {
+      width: 16px; height: 16px;
+      position: absolute;
+      transition: opacity 0.25s ease, transform 0.35s ease;
+    }
+    [data-theme="dark"]  .theme-toggle .icon-sun,
+    [data-theme="light"] .theme-toggle .icon-moon {
+      opacity: 0; transform: rotate(-90deg) scale(0.6);
+    }
+    [data-theme="dark"]  .theme-toggle .icon-moon,
+    [data-theme="light"] .theme-toggle .icon-sun {
+      opacity: 1; transform: rotate(0) scale(1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .theme-toggle svg { transition: opacity 0.15s ease; transform: none !important; }
+    }
+
+    /* ── Login ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box h1 {
+      font-size: 1.5em;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .login-box p {
+      font-size: 0.82em;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 0.72em;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 0.88em;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 11px 20px;
+      border-radius: 10px;
+      font-size: 0.84em;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-primary { background: var(--accent); color: var(--btn-fg); width: 100%; margin-top: 8px; }
+    .btn-primary:hover { box-shadow: 0 0 20px rgba(34,211,238,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-size: 0.78em;
+    }
+    .btn-ghost:hover { border-color: var(--accent-mid); color: var(--text); }
+
+    .btn-danger {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,0.2);
+      font-size: 0.72em;
+      padding: 6px 12px;
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.15); }
+
+    .btn-sm {
+      font-size: 0.72em;
+      padding: 6px 12px;
+    }
+
+    .error-msg {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--red-soft);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 8px;
+      font-size: 0.78em;
+      color: var(--red);
+      display: none;
+    }
+
+    /* ── Dashboard ── */
+    #dashboard { display: none; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(var(--bg-rgb),0.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-left a {
+      font-size: 0.78em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .header-left a:hover { color: var(--accent); }
+
+    .header-title {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .sep { color: var(--border); }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76em;
+      color: var(--muted);
+    }
+
+    .user-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+
+    .page-title {
+      font-size: 1.6em;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 6px;
+    }
+
+    .page-sub {
+      font-size: 0.84em;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    /* ── Team section ── */
+    .team-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .team-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+
+    .team-header:hover { background: rgba(255,255,255,0.02); }
+
+    .team-emoji { font-size: 1.3em; }
+
+    .team-header-info { flex: 1; }
+    .team-header-name { font-size: 0.95em; font-weight: 600; }
+    .team-header-count { font-size: 0.7em; color: var(--muted); }
+
+    .team-chevron {
+      color: var(--muted);
+      font-size: 0.75em;
+      transition: transform 0.2s;
+    }
+
+    .team-section.open .team-chevron { transform: rotate(180deg); }
+
+    .team-body {
+      display: none;
+      padding: 0 22px 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .team-section.open .team-body { display: block; }
+
+    /* ── Team edit form ── */
+    .team-edit-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      padding: 16px 0 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .team-edit-row .field { flex: 1; margin: 0; }
+
+    /* ── Member list ── */
+    .member-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: border-color 0.15s, opacity 0.15s;
+    }
+
+    .member-item.dragging {
+      opacity: 0.4;
+      border-color: var(--accent-mid);
+    }
+
+    .member-item.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-mid);
+    }
+
+    .member-item input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.82em;
+      font-family: inherit;
+      outline: none;
+      min-width: 0;
+    }
+
+    .member-item input:focus {
+      background: var(--card);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .mi-name  { flex: 1.2; font-weight: 500; }
+    .mi-role  { flex: 2; color: var(--muted); }
+    .mi-badge { flex: 1; color: var(--accent); font-size: 0.76em; }
+    .mi-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--border);
+      font-size: 1em;
+      flex-shrink: 0;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color 0.15s;
+      user-select: none;
+    }
+
+    .member-item:hover .drag-handle { color: var(--muted); }
+    .member-item[draggable="true"]:active { cursor: grabbing; }
+
+    /* ── Add member row ── */
+    .add-member-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr auto;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: end;
+    }
+
+    .add-member-row .field { margin: 0; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 0.8em;
+      color: var(--text);
+      z-index: 999;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(52,211,153,0.35); color: var(--green); }
+    .toast.error   { border-color: rgba(248,113,113,0.35); color: var(--red); }
+
+    /* ── Add team ── */
+    .add-team-card {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 8px;
+    }
+
+    .add-team-card h3 {
+      font-size: 0.88em;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--muted);
+    }
+
+    .add-team-grid {
+      display: grid;
+      grid-template-columns: 60px 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .add-team-grid .field { margin: 0; }
+
+    /* ── Hub (tela de seleção de seção) ── */
+    .admin-hub {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 8px;
+    }
+
+    .hub-card {
+      background: linear-gradient(135deg, var(--card) 0%, rgba(34,211,238,0.05) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 26px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hub-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-pop);
+    }
+
+    .hub-card:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34,211,238,0.30);
+    }
+
+    .hub-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(34,211,238,0.08);
+      border: 1px solid rgba(34,211,238,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6em;
+      margin-bottom: 8px;
+    }
+
+    .hub-card h3 {
+      font-size: 1em;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .hub-card p {
+      font-size: 0.78em;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .hub-card .hub-cta {
+      margin-top: 6px;
+      font-size: 0.72em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+      .admin-hub { grid-template-columns: 1fr; }
+    }
+
+    /* Botão voltar para o hub */
+    .back-to-hub {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.76em;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 16px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .back-to-hub:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      width: fit-content;
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border-radius: 9px;
+      font-size: 0.8em;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── History events ── */
+    .hist-event-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 60px 1fr 120px 110px auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      transition: border-color 0.15s, opacity 0.15s;
+    }
+
+    .hist-event-item.dragging { opacity: 0.4; border-color: var(--accent-mid); }
+    .hist-event-item.drag-over { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-mid); }
+
+    .hist-event-item input,
+    .hist-event-item select,
+    .hist-event-item textarea {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.82em;
+      font-family: inherit;
+      outline: none;
+      width: 100%;
+    }
+
+    .hist-event-item input:focus,
+    .hist-event-item select:focus,
+    .hist-event-item textarea:focus {
+      background: var(--card);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .hist-event-item select { cursor: pointer; }
+    .hist-event-item select option { background: var(--card); }
+
+    .hist-photo-thumb {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .hist-photo-placeholder {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7em;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .hist-photo-placeholder:hover { border-color: var(--accent-mid); color: var(--accent); }
+
+    .add-hist-card {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 8px;
+    }
+
+    .add-hist-card h3 {
+      font-size: 0.88em;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--muted);
+    }
+
+    .add-hist-grid {
+      display: grid;
+      grid-template-columns: 70px 1fr 130px;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: end;
+    }
+
+    .add-hist-grid .field { margin: 0; }
+
+    .hist-desc-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .hist-desc-row textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.84em;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 70px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .hist-desc-row textarea:focus { border-color: var(--accent); }
+
+    .upload-area {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      font-size: 0.75em;
+      color: var(--muted);
+      min-width: 120px;
+    }
+
+    .upload-area:hover { border-color: var(--accent-mid); background: var(--accent-soft); color: var(--accent); }
+    .upload-area input[type=file] { display: none; }
+
+    .upload-preview {
+      width: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+      max-height: 90px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .uploading-indicator { color: var(--accent); font-size: 0.72em; text-align: center; padding: 4px 0; }
+
+    @media (max-width: 600px) {
+      header { padding: 0 16px; }
+      main   { padding: 28px 16px; }
+      .team-edit-row  { flex-direction: column; align-items: stretch; }
+      .add-member-row { grid-template-columns: 1fr 1fr; }
+      .add-member-row .field:nth-child(3) { grid-column: span 2; }
+      .add-team-grid  { grid-template-columns: 60px 1fr; }
+      .add-team-grid .btn { grid-column: span 2; }
+      .hist-event-item { grid-template-columns: 1fr 1fr; }
+      .add-hist-grid { grid-template-columns: 1fr; }
+      .post-editor-grid, .add-post-top { grid-template-columns: 1fr; }
+      .add-post-cover-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Blog ── */
+    .post-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .post-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .post-item.expanded { border-color: var(--accent-mid); }
+
+    .post-item-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .post-item-header:hover { background: rgba(255,255,255,0.02); }
+
+    .post-status {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .post-status.published { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.5); }
+    .post-status.draft     { background: var(--muted); }
+
+    .post-item-title { flex: 1; font-size: 0.88em; font-weight: 600; }
+    .post-item-cat   { font-size: 0.68em; color: var(--muted); }
+    .post-item-date  { font-size: 0.68em; color: var(--muted); white-space: nowrap; }
+
+    .post-editor {
+      display: none;
+      padding: 0 18px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .post-item.expanded .post-editor { display: block; }
+
+    .post-editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 140px 160px;
+      gap: 10px;
+      margin-top: 16px;
+      align-items: end;
+    }
+
+    .post-editor-grid .field { margin: 0; }
+
+    .post-editor textarea,
+    .add-post-card textarea {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 0.84em;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.65;
+    }
+
+    .post-editor textarea:focus,
+    .add-post-card textarea:focus { border-color: var(--accent); }
+
+    .post-editor-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-publish {
+      background: rgba(52,211,153,0.1);
+      color: var(--green);
+      border: 1px solid rgba(52,211,153,0.25);
+      font-size: 0.75em;
+      padding: 7px 14px;
+    }
+
+    .btn-publish:hover { background: rgba(52,211,153,0.18); }
+
+    .btn-unpublish {
+      background: rgba(107,114,128,0.12);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-size: 0.75em;
+      padding: 7px 14px;
+    }
+
+    .btn-unpublish:hover { background: rgba(107,114,128,0.2); color: var(--text); }
+
+    .add-post-card {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 10px;
+    }
+
+    .add-post-card h3 {
+      font-size: 0.88em;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: var(--muted);
+    }
+
+    .add-post-top {
+      display: grid;
+      grid-template-columns: 1fr 140px 160px;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: end;
+    }
+
+    .add-post-top .field { margin: 0; }
+
+    .add-post-cover-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: start;
+    }
+
+    .field select {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-size: 0.88em;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .field select:focus { border-color: var(--accent); }
+    .field select option { background: var(--card); }
+
+    .char-hint { font-size: 0.65em; color: var(--muted); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────── -->
+<div id="login-screen">
+  <button id="theme-toggle-login" class="theme-toggle" type="button" role="switch" aria-checked="false"
+          aria-label="Alternar tema claro e escuro" title="Alternar tema (claro/escuro)"
+          style="position:fixed;top:18px;right:18px;z-index:10" onclick="toggleTheme()">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+  <div class="login-box">
+    <h1>Painel Admin</h1>
+    <p>Clube de Robótica JGP — OBR 2026</p>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="login-btn" onclick="login()">Entrar</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ─────────────────────────────── -->
+<div id="dashboard">
+  <header>
+    <div class="header-left">
+      <a href="index.html">← Ver site</a>
+      <span class="sep">|</span>
+      <span class="header-title">Admin</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="user-pill">
+        <span class="user-dot"></span>
+        <span id="user-email-display"></span>
+      </div>
+      <button id="theme-toggle" class="theme-toggle" type="button" role="switch" aria-checked="false"
+              aria-label="Alternar tema claro e escuro" title="Alternar tema (claro/escuro)" onclick="toggleTheme()">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button class="btn btn-ghost" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <button class="back-to-hub" id="back-to-hub" onclick="goToHub()" style="display:none">← Início</button>
+
+    <h1 class="page-title" id="page-title">Painel Admin</h1>
+    <p class="page-sub" id="page-sub">O que você quer gerenciar hoje?</p>
+
+    <!-- Hub: tela inicial de seleção de seção -->
+    <div class="admin-hub" id="admin-hub">
+      <button class="hub-card" type="button" onclick="enterSection('equipes')" aria-label="Gerenciar equipes">
+        <div class="hub-icon">👥</div>
+        <h3>Equipes</h3>
+        <p>Crie equipes, adicione integrantes e organize as funções.</p>
+        <span class="hub-cta">Acessar →</span>
+      </button>
+      <button class="hub-card" type="button" onclick="enterSection('historia')" aria-label="Gerenciar história">
+        <div class="hub-icon">📜</div>
+        <h3>História</h3>
+        <p>Registre marcos, fundações, competições e eventos do clube.</p>
+        <span class="hub-cta">Acessar →</span>
+      </button>
+      <button class="hub-card" type="button" onclick="enterSection('blog')" aria-label="Gerenciar blog">
+        <div class="hub-icon">📝</div>
+        <h3>Blog</h3>
+        <p>Escreva, publique e edite postagens do clube.</p>
+        <span class="hub-cta">Acessar →</span>
+      </button>
+    </div>
+
+    <div class="tabs" id="section-tabs" style="display:none">
+      <button class="tab-btn" data-tab="equipes"  onclick="switchTab('equipes')">Equipes</button>
+      <button class="tab-btn" data-tab="historia" onclick="switchTab('historia')">História</button>
+      <button class="tab-btn" data-tab="blog"     onclick="switchTab('blog')">Blog</button>
+    </div>
+
+    <!-- ── Aba Equipes ── -->
+    <div class="tab-pane" id="tab-equipes">
+      <div id="teams-list">
+        <div style="color:var(--muted);font-size:0.85em;padding:20px 0;">Carregando…</div>
+      </div>
+      <div class="add-team-card">
+        <h3>+ Nova equipe</h3>
+        <div class="add-team-grid">
+          <div class="field">
+            <label>Ícone</label>
+            <input type="text" id="new-team-icon" placeholder="🤖" maxlength="2">
+          </div>
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="new-team-name" placeholder="Nome da equipe">
+          </div>
+          <button class="btn btn-primary" onclick="addTeam()">Criar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Aba História ── -->
+    <div class="tab-pane" id="tab-historia">
+      <div id="hist-list">
+        <div style="color:var(--muted);font-size:0.85em;padding:20px 0;">Carregando…</div>
+      </div>
+
+      <div class="add-hist-card">
+        <h3>+ Novo evento</h3>
+        <div class="add-hist-grid">
+          <div class="field">
+            <label>Ano</label>
+            <input type="text" id="nh-year" placeholder="2024" maxlength="9">
+          </div>
+          <div class="field">
+            <label>Título</label>
+            <input type="text" id="nh-title" placeholder="Ex: Fundação do Clube">
+          </div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="nh-type" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:0.88em;font-family:inherit;outline:none;">
+              <option value="foundation">Fundação</option>
+              <option value="competition">Competição</option>
+              <option value="event">Evento</option>
+            </select>
+          </div>
+        </div>
+        <div class="hist-desc-row">
+          <div class="field" style="margin:0">
+            <label>Descrição</label>
+            <textarea id="nh-desc" placeholder="Conte o que aconteceu neste momento…"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.72em;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;">Foto</label>
+            <label class="upload-area" id="nh-upload-area">
+              <img class="upload-preview" id="nh-preview" style="display:none">
+              <span id="nh-upload-label">📷 Escolher foto</span>
+              <input type="file" id="nh-file" accept="image/*" onchange="previewNewPhoto(this)">
+            </label>
+            <div class="uploading-indicator" id="nh-uploading" style="display:none">Enviando…</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" style="width:auto;padding:10px 28px" onclick="addHistEvent()">Adicionar evento</button>
+        </div>
+      </div>
+    </div>
+    <!-- ── Aba Blog ── -->
+    <div class="tab-pane" id="tab-blog">
+      <div class="post-list" id="post-list">
+        <div style="color:var(--muted);font-size:0.85em;padding:10px 0;">Carregando…</div>
+      </div>
+
+      <div class="add-post-card">
+        <h3>+ Nova postagem</h3>
+        <div class="add-post-top">
+          <div class="field">
+            <label>Título</label>
+            <input type="text" id="np-title" placeholder="Título da postagem">
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select id="np-cat">
+              <option value="tecnologia">💡 Tecnologia</option>
+              <option value="desenvolvimento">🛠 Desenvolvimento</option>
+              <option value="robotica">🤖 Robótica</option>
+              <option value="novidades">📡 Novidades</option>
+              <option value="geral">📝 Geral</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Autor</label>
+            <input type="text" id="np-author" value="Prof. Jorge Frias">
+          </div>
+        </div>
+        <div class="add-post-cover-row">
+          <div class="field" style="margin:0">
+            <label>Resumo <span class="char-hint">(aparece no card — max 200 caracteres)</span></label>
+            <textarea id="np-excerpt" rows="2" maxlength="200" placeholder="Uma frase descrevendo o post…"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.72em;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;">Capa</label>
+            <label class="upload-area" id="np-upload-area">
+              <img class="upload-preview" id="np-preview" style="display:none">
+              <span id="np-upload-label">🖼 Escolher imagem</span>
+              <input type="file" id="np-file" accept="image/*" onchange="previewPostCover(this)">
+            </label>
+          </div>
+        </div>
+        <div class="field" style="margin:10px 0">
+          <label>Conteúdo <span class="char-hint">(use linha em branco para separar parágrafos · **negrito** · *destaque*)</span></label>
+          <textarea id="np-content" rows="10" placeholder="Escreva o conteúdo completo do post aqui…"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary" style="width:auto;padding:10px 28px" onclick="addPost(false)">Salvar rascunho</button>
+          <button class="btn btn-publish btn-sm" style="padding:10px 20px" onclick="addPost(true)">Publicar agora</button>
+          <div class="uploading-indicator" id="np-uploading" style="display:none">Enviando capa…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://wqpelifwwzshtntboeib.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcGVsaWZ3d3pzaHRudGJvZWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjkxODksImV4cCI6MjA5MzcwNTE4OX0.yWkCVGJzoeV4svgSr8c-rSLww6UhfxKpipRYTmZLte4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── Theme toggle (compartilha chave 'theme' com o site) ── */
+function applyTheme(theme, opts) {
+  opts = opts || {};
+  const html = document.documentElement;
+  if (opts.animate) html.classList.add('theme-transitioning');
+  html.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
+    btn.setAttribute('aria-label',
+      theme === 'light' ? 'Mudar para tema escuro' : 'Mudar para tema claro');
+  });
+  if (opts.animate) setTimeout(() => html.classList.remove('theme-transitioning'), 350);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  applyTheme(next, { animate: true });
+}
+
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
+if (window.matchMedia) {
+  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  const onChange = e => {
+    if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'light' : 'dark', { animate: true });
+  };
+  mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener(onChange);
+}
+
+/* ── Auth ───────────────────────────────────── */
+async function login() {
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  btn.disabled = true;
+  btn.textContent = 'Entrando…';
+  err.style.display = 'none';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    err.textContent = 'E-mail ou senha incorretos.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+}
+
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session) {
+    const { data: isAdmin, error: roleErr } = await sb.rpc('is_admin');
+    if (roleErr || !isAdmin) {
+      await sb.auth.signOut();
+      const err = document.getElementById('login-error');
+      err.textContent = 'Acesso restrito a administradores.';
+      err.style.display = 'block';
+      return;
+    }
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('user-email-display').textContent = session.user.email;
+    loadDashboard();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('login-btn').textContent = 'Entrar';
+    document.getElementById('login-error').style.display = 'none';
+  }
+});
+
+/* ── Toast ──────────────────────────────────── */
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ── Load dashboard ─────────────────────────── */
+async function loadDashboard() {
+  const { data: teams } = await sb
+    .from('teams')
+    .select('*, members(id, name, role, badge, display_order)')
+    .order('display_order');
+
+  const container = document.getElementById('teams-list');
+  if (!teams || teams.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.85em;">Nenhuma equipe ainda.</div>';
+    return;
+  }
+
+  container.innerHTML = teams.map(t => {
+    t.members.sort((a, b) => a.display_order - b.display_order);
+    return renderTeamSection(t);
+  }).join('');
+
+  teams.forEach(t => {
+    initDragDrop(document.getElementById(`members-${t.id}`));
+  });
+}
+
+/* ── Render team section ────────────────────── */
+function memberHtml(m, teamId) {
+  return `
+    <div class="member-item" id="member-${m.id}" data-member-id="${m.id}" draggable="true">
+      <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
+      <input class="mi-name"  value="${esc(m.name)}"  onblur="saveMember('${m.id}', this.closest('.member-item'))" placeholder="Nome">
+      <input class="mi-role"  value="${esc(m.role)}"  onblur="saveMember('${m.id}', this.closest('.member-item'))" placeholder="Função">
+      <input class="mi-badge" value="${esc(m.badge)}" onblur="saveMember('${m.id}', this.closest('.member-item'))" placeholder="Badge">
+      <div class="mi-actions">
+        <button class="btn btn-danger" onclick="deleteMember('${m.id}', '${teamId}')">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderTeamSection(t) {
+  const membersHtml = t.members.map(m => memberHtml(m, t.id)).join('');
+
+  return `
+    <div class="team-section" id="team-section-${t.id}">
+      <div class="team-header" onclick="toggleTeam('${t.id}')">
+        <span class="team-emoji">${t.icon}</span>
+        <div class="team-header-info">
+          <div class="team-header-name">${esc(t.name)}</div>
+          <div class="team-header-count">${t.members.length} integrante${t.members.length !== 1 ? 's' : ''}</div>
+        </div>
+        <span class="team-chevron">▼</span>
+      </div>
+      <div class="team-body">
+        <div class="team-edit-row">
+          <div class="field">
+            <label>Ícone</label>
+            <input type="text" id="icon-${t.id}" value="${esc(t.icon)}" maxlength="2" style="width:70px">
+          </div>
+          <div class="field">
+            <label>Nome da equipe</label>
+            <input type="text" id="name-${t.id}" value="${esc(t.name)}">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="saveTeam('${t.id}')">Salvar</button>
+          <button class="btn btn-danger" onclick="deleteTeam('${t.id}')">Excluir equipe</button>
+        </div>
+
+        <div class="member-list" id="members-${t.id}">${membersHtml}</div>
+
+        <div class="add-member-row" id="add-row-${t.id}">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="nm-name-${t.id}" placeholder="Nome">
+          </div>
+          <div class="field">
+            <label>Função</label>
+            <input type="text" id="nm-role-${t.id}" placeholder="Ex: Programador">
+          </div>
+          <div class="field">
+            <label>Badge</label>
+            <input type="text" id="nm-badge-${t.id}" placeholder="Ex: Software">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addMember('${t.id}')">+ Membro</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleTeam(id) {
+  document.getElementById(`team-section-${id}`).classList.toggle('open');
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Save team ──────────────────────────────── */
+async function saveTeam(id) {
+  const name = document.getElementById(`name-${id}`).value.trim();
+  const icon = document.getElementById(`icon-${id}`).value.trim();
+  if (!name) return;
+  const { error } = await sb.from('teams').update({ name, icon }).eq('id', id);
+  if (error) { showToast('Erro ao salvar', 'error'); return; }
+  document.querySelector(`#team-section-${id} .team-header-name`).textContent = name;
+  document.querySelector(`#team-section-${id} .team-emoji`).textContent = icon;
+  showToast('Equipe salva!');
+}
+
+/* ── Delete team ────────────────────────────── */
+async function deleteTeam(id) {
+  if (!confirm('Excluir esta equipe e todos os membros?')) return;
+  const { error } = await sb.from('teams').delete().eq('id', id);
+  if (error) { showToast('Erro ao excluir', 'error'); return; }
+  document.getElementById(`team-section-${id}`).remove();
+  showToast('Equipe excluída.');
+}
+
+/* ── Add team ───────────────────────────────── */
+async function addTeam() {
+  const name = document.getElementById('new-team-name').value.trim();
+  const icon = document.getElementById('new-team-icon').value.trim() || '🤖';
+  if (!name) return;
+
+  const { data: existing } = await sb.from('teams').select('display_order').order('display_order', { ascending: false }).limit(1);
+  const order = (existing?.[0]?.display_order ?? 0) + 1;
+  const slug  = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+  const { data, error } = await sb.from('teams').insert({ name, icon, slug, display_order: order }).select('*, members(*)').single();
+  if (error) { showToast('Erro ao criar equipe', 'error'); return; }
+
+  document.getElementById('new-team-name').value = '';
+  document.getElementById('new-team-icon').value = '';
+
+  const container = document.getElementById('teams-list');
+  container.insertAdjacentHTML('beforeend', renderTeamSection({ ...data, members: [] }));
+  showToast('Equipe criada!');
+}
+
+/* ── Save member ────────────────────────────── */
+async function saveMember(id, row) {
+  const name  = row.querySelector('.mi-name').value.trim();
+  const role  = row.querySelector('.mi-role').value.trim();
+  const badge = row.querySelector('.mi-badge').value.trim();
+  if (!name) return;
+  const { error } = await sb.from('members').update({ name, role, badge }).eq('id', id);
+  if (error) { showToast('Erro ao salvar membro', 'error'); return; }
+  showToast('Membro salvo!');
+}
+
+/* ── Delete member ──────────────────────────── */
+async function deleteMember(memberId, teamId) {
+  if (!confirm('Remover este membro?')) return;
+  const { error } = await sb.from('members').delete().eq('id', memberId);
+  if (error) { showToast('Erro ao remover', 'error'); return; }
+  document.getElementById(`member-${memberId}`).remove();
+  const count = document.querySelectorAll(`#members-${teamId} .member-item`).length;
+  document.querySelector(`#team-section-${teamId} .team-header-count`).textContent =
+    `${count} integrante${count !== 1 ? 's' : ''}`;
+  showToast('Membro removido.');
+}
+
+/* ── Add member ─────────────────────────────── */
+async function addMember(teamId) {
+  const name  = document.getElementById(`nm-name-${teamId}`).value.trim();
+  const role  = document.getElementById(`nm-role-${teamId}`).value.trim();
+  const badge = document.getElementById(`nm-badge-${teamId}`).value.trim();
+  if (!name) return;
+
+  const { data: existing } = await sb.from('members').select('display_order').eq('team_id', teamId).order('display_order', { ascending: false }).limit(1);
+  const order = (existing?.[0]?.display_order ?? 0) + 1;
+
+  const { data, error } = await sb.from('members').insert({ team_id: teamId, name, role, badge, display_order: order }).select().single();
+  if (error) { showToast('Erro ao adicionar membro', 'error'); return; }
+
+  document.getElementById(`nm-name-${teamId}`).value  = '';
+  document.getElementById(`nm-role-${teamId}`).value  = '';
+  document.getElementById(`nm-badge-${teamId}`).value = '';
+
+  const list = document.getElementById(`members-${teamId}`);
+  list.insertAdjacentHTML('beforeend', memberHtml(data, teamId));
+
+  const count = document.querySelectorAll(`#members-${teamId} .member-item`).length;
+  document.querySelector(`#team-section-${teamId} .team-header-count`).textContent =
+    `${count} integrante${count !== 1 ? 's' : ''}`;
+  showToast('Membro adicionado!');
+}
+
+/* ── Tabs ───────────────────────────────────── */
+/* ── Navegação hub ⇄ seção ───────────────────
+   Hub é a landing após login. Usuário escolhe a seção; só então
+   carregam-se tabs/painéis. Botão "Início" faz o caminho de volta
+   (princípio de IHC: controle e liberdade do usuário). */
+const SECTION_META = {
+  equipes:  { title: 'Equipes',  sub: 'Crie, edite ou remova equipes e seus integrantes.' },
+  historia: { title: 'História', sub: 'Registre marcos, fundações, competições e eventos.' },
+  blog:     { title: 'Blog',     sub: 'Escreva, publique e gerencie postagens do clube.' },
+};
+
+function enterSection(name) {
+  document.getElementById('admin-hub').style.display = 'none';
+  document.getElementById('section-tabs').style.display = 'flex';
+  document.getElementById('back-to-hub').style.display = 'inline-flex';
+  const meta = SECTION_META[name];
+  if (meta) {
+    document.getElementById('page-title').textContent = meta.title;
+    document.getElementById('page-sub').textContent   = meta.sub;
+  }
+  switchTabInternal(name);
+}
+
+function goToHub() {
+  document.getElementById('admin-hub').style.display = 'grid';
+  document.getElementById('section-tabs').style.display = 'none';
+  document.getElementById('back-to-hub').style.display = 'none';
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-title').textContent = 'Painel Admin';
+  document.getElementById('page-sub').textContent   = 'O que você quer gerenciar hoje?';
+}
+
+function switchTabInternal(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  const btn = document.querySelector(`.tab-btn[data-tab="${name}"]`);
+  if (btn) btn.classList.add('active');
+  const meta = SECTION_META[name];
+  if (meta) {
+    document.getElementById('page-title').textContent = meta.title;
+    document.getElementById('page-sub').textContent   = meta.sub;
+  }
+  if (name === 'historia') loadHistDashboard();
+  if (name === 'blog')     loadBlogDashboard();
+}
+
+function switchTab(name) { switchTabInternal(name); }
+
+/* ── História dashboard ─────────────────────── */
+async function loadHistDashboard() {
+  const container = document.getElementById('hist-list');
+  container.innerHTML = '<div style="color:var(--muted);font-size:0.85em;padding:10px 0;">Carregando…</div>';
+  const { data: events } = await sb.from('history_events').select('*').order('display_order');
+  if (!events || events.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.85em;padding:10px 0;">Nenhum evento ainda.</div>';
+    return;
+  }
+  container.innerHTML = events.map(ev => histEventHtml(ev)).join('');
+  initHistDragDrop(container);
+}
+
+function histEventHtml(ev) {
+  const photoEl = ev.photo_url
+    ? `<img class="hist-photo-thumb" src="${ev.photo_url}" title="Ver foto" onclick="window.open('${ev.photo_url}','_blank')">`
+    : `<div class="hist-photo-placeholder" title="Adicionar foto" onclick="triggerHistPhotoUpload('${ev.id}')">📷</div>`;
+
+  return `
+    <div class="hist-event-item" id="hev-${ev.id}" data-hev-id="${ev.id}" draggable="true">
+      <span class="drag-handle" title="Arrastar">⠿</span>
+      <input value="${esc(ev.year)}" placeholder="Ano" maxlength="9"
+             onblur="saveHistEvent('${ev.id}', this.closest('.hist-event-item'))">
+      <input value="${esc(ev.title)}" placeholder="Título" style="font-weight:500"
+             onblur="saveHistEvent('${ev.id}', this.closest('.hist-event-item'))">
+      <select onchange="saveHistEvent('${ev.id}', this.closest('.hist-event-item'))">
+        <option value="foundation" ${ev.type==='foundation'?'selected':''}>Fundação</option>
+        <option value="competition" ${ev.type==='competition'?'selected':''}>Competição</option>
+        <option value="event" ${ev.type==='event'?'selected':''}>Evento</option>
+      </select>
+      <div style="position:relative">
+        ${photoEl}
+        <input type="file" accept="image/*" id="hev-file-${ev.id}" style="display:none"
+               onchange="uploadHistPhoto(this,'${ev.id}')">
+      </div>
+      <div class="mi-actions">
+        <button class="btn btn-danger" onclick="deleteHistEvent('${ev.id}')">✕</button>
+      </div>
+    </div>`;
+}
+
+function triggerHistPhotoUpload(evId) {
+  document.getElementById(`hev-file-${evId}`).click();
+}
+
+async function uploadHistPhoto(input, evId) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext  = file.name.split('.').pop();
+  const path = `${evId}.${ext}`;
+  const { error: upErr } = await sb.storage.from('history-photos').upload(path, file, { upsert: true });
+  if (upErr) { showToast('Erro no upload', 'error'); return; }
+  const { data: { publicUrl } } = sb.storage.from('history-photos').getPublicUrl(path);
+  const { error } = await sb.from('history_events').update({ photo_url: publicUrl }).eq('id', evId);
+  if (error) { showToast('Erro ao salvar foto', 'error'); return; }
+  await loadHistDashboard();
+  showToast('Foto salva!');
+}
+
+async function saveHistEvent(id, row) {
+  const year  = row.querySelector('input:nth-of-type(1)').value.trim();
+  const title = row.querySelector('input:nth-of-type(2)').value.trim();
+  const type  = row.querySelector('select').value;
+  if (!year || !title) return;
+  const { error } = await sb.from('history_events').update({ year, title, type }).eq('id', id);
+  if (error) { showToast('Erro ao salvar', 'error'); return; }
+  showToast('Salvo!');
+}
+
+async function deleteHistEvent(id) {
+  if (!confirm('Remover este evento?')) return;
+  await sb.from('history_events').delete().eq('id', id);
+  document.getElementById(`hev-${id}`)?.remove();
+  showToast('Evento removido.');
+}
+
+/* ── Adicionar evento ───────────────────────── */
+let newPhotoFile = null;
+
+function previewNewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  newPhotoFile = file;
+  const url = URL.createObjectURL(file);
+  const preview = document.getElementById('nh-preview');
+  preview.src = url;
+  preview.style.display = 'block';
+  document.getElementById('nh-upload-label').textContent = file.name;
+}
+
+async function addHistEvent() {
+  const year  = document.getElementById('nh-year').value.trim();
+  const title = document.getElementById('nh-title').value.trim();
+  const type  = document.getElementById('nh-type').value;
+  const desc  = document.getElementById('nh-desc').value.trim();
+  if (!year || !title) { showToast('Preencha ano e título', 'error'); return; }
+
+  const { data: existing } = await sb.from('history_events').select('display_order').order('display_order', { ascending: false }).limit(1);
+  const order = (existing?.[0]?.display_order ?? 0) + 1;
+
+  const { data, error } = await sb.from('history_events')
+    .insert({ year, title, type, description: desc, display_order: order })
+    .select().single();
+  if (error) { showToast('Erro ao criar evento', 'error'); return; }
+
+  if (newPhotoFile) {
+    document.getElementById('nh-uploading').style.display = 'block';
+    const ext  = newPhotoFile.name.split('.').pop();
+    const path = `${data.id}.${ext}`;
+    const { error: upErr } = await sb.storage.from('history-photos').upload(path, newPhotoFile, { upsert: true });
+    if (!upErr) {
+      const { data: { publicUrl } } = sb.storage.from('history-photos').getPublicUrl(path);
+      await sb.from('history_events').update({ photo_url: publicUrl }).eq('id', data.id);
+      data.photo_url = publicUrl;
+    }
+    document.getElementById('nh-uploading').style.display = 'none';
+  }
+
+  document.getElementById('nh-year').value  = '';
+  document.getElementById('nh-title').value = '';
+  document.getElementById('nh-desc').value  = '';
+  document.getElementById('nh-preview').style.display = 'none';
+  document.getElementById('nh-upload-label').textContent = '📷 Escolher foto';
+  newPhotoFile = null;
+
+  const container = document.getElementById('hist-list');
+  if (container.querySelector('[style*="Nenhum"]') || container.querySelector('[style*="Carregando"]')) {
+    container.innerHTML = '';
+    initHistDragDrop(container);
+  }
+  container.insertAdjacentHTML('beforeend', histEventHtml(data));
+  showToast('Evento adicionado!');
+}
+
+/* ── Drag-and-drop história ─────────────────── */
+function initHistDragDrop(listEl) {
+  if (listEl.dataset.dragInit) return;
+  listEl.dataset.dragInit = '1';
+
+  listEl.addEventListener('dragstart', e => {
+    const item = e.target.closest('.hist-event-item[draggable]');
+    if (!item) return;
+    dragSrc = item;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => item.classList.add('dragging'), 0);
+  });
+
+  listEl.addEventListener('dragend', () => {
+    if (dragSrc) dragSrc.classList.remove('dragging');
+    listEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragSrc = null;
+  });
+
+  listEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    const over = e.target.closest('.hist-event-item');
+    if (!over || over === dragSrc) return;
+    listEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    over.classList.add('drag-over');
+    const mid = over.getBoundingClientRect().top + over.offsetHeight / 2;
+    listEl.insertBefore(dragSrc, e.clientY < mid ? over : over.nextSibling);
+  });
+
+  listEl.addEventListener('drop', async e => {
+    e.preventDefault();
+    listEl.querySelectorAll('.drag-over, .dragging').forEach(el => el.classList.remove('drag-over', 'dragging'));
+    const items = [...listEl.querySelectorAll('.hist-event-item')];
+    await Promise.all(items.map((item, idx) =>
+      sb.from('history_events').update({ display_order: idx + 1 }).eq('id', item.dataset.hevId)
+    ));
+    showToast('Ordem salva!');
+  });
+}
+
+/* ── Blog dashboard ─────────────────────────── */
+const CAT_LABELS = {
+  tecnologia: '💡 Tecnologia', desenvolvimento: '🛠 Desenvolvimento',
+  robotica: '🤖 Robótica', novidades: '📡 Novidades', geral: '📝 Geral',
+};
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+async function loadBlogDashboard() {
+  const container = document.getElementById('post-list');
+  container.innerHTML = '<div style="color:var(--muted);font-size:0.85em;padding:10px 0;">Carregando…</div>';
+  const { data: posts } = await sb.from('blog_posts').select('*').order('display_order');
+  if (!posts || posts.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.85em;padding:10px 0;">Nenhum post ainda.</div>';
+    return;
+  }
+  container.innerHTML = posts.map(p => postItemHtml(p)).join('');
+}
+
+function postItemHtml(p) {
+  const catOpts = ['tecnologia','desenvolvimento','robotica','novidades','geral']
+    .map(c => `<option value="${c}" ${p.category===c?'selected':''}>${CAT_LABELS[c]}</option>`).join('');
+  const coverThumb = p.cover_url
+    ? `<img src="${p.cover_url}" style="height:60px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer" title="Ver capa" onclick="window.open('${p.cover_url}','_blank')">`
+    : `<label class="hist-photo-placeholder" style="width:60px" title="Adicionar capa">🖼<input type="file" accept="image/*" style="display:none" onchange="uploadPostCover(this,'${p.id}')"></label>`;
+
+  return `
+    <div class="post-item" id="post-${p.id}">
+      <div class="post-item-header" onclick="togglePostEditor('${p.id}')">
+        <span class="post-status ${p.published?'published':'draft'}" title="${p.published?'Publicado':'Rascunho'}"></span>
+        <span class="post-item-title">${esc(p.title)}</span>
+        <span class="post-item-cat">${CAT_LABELS[p.category]||p.category}</span>
+        <span class="post-item-date">${fmtDate(p.created_at)}</span>
+        <span style="color:var(--muted);font-size:0.7em">▼</span>
+      </div>
+      <div class="post-editor">
+        <div class="post-editor-grid">
+          <div class="field" style="margin:0">
+            <label>Título</label>
+            <input type="text" value="${esc(p.title)}" id="pt-${p.id}" placeholder="Título">
+          </div>
+          <div class="field" style="margin:0">
+            <label>Categoria</label>
+            <select id="pc-${p.id}">${catOpts}</select>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Autor</label>
+            <input type="text" value="${esc(p.author)}" id="pa-${p.id}">
+          </div>
+        </div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start">
+          <div class="field" style="margin:0">
+            <label>Resumo</label>
+            <textarea id="pe-${p.id}" rows="2" maxlength="200">${esc(p.excerpt)}</textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.72em;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;">Capa</label>
+            ${coverThumb}
+          </div>
+        </div>
+        <div class="field" style="margin:10px 0 0">
+          <label>Conteúdo</label>
+          <textarea id="pco-${p.id}" rows="8">${esc(p.content)}</textarea>
+        </div>
+        <div class="post-editor-actions">
+          <button class="btn btn-ghost btn-sm" onclick="savePost('${p.id}')">Salvar</button>
+          ${p.published
+            ? `<button class="btn btn-unpublish" onclick="togglePublish('${p.id}', false)">Despublicar</button>`
+            : `<button class="btn btn-publish"   onclick="togglePublish('${p.id}', true)">Publicar</button>`}
+          <button class="btn btn-danger" onclick="deletePost('${p.id}')">Excluir</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function togglePostEditor(id) {
+  document.getElementById(`post-${id}`).classList.toggle('expanded');
+}
+
+async function savePost(id) {
+  const title   = document.getElementById(`pt-${id}`).value.trim();
+  const cat     = document.getElementById(`pc-${id}`).value;
+  const author  = document.getElementById(`pa-${id}`).value.trim();
+  const excerpt = document.getElementById(`pe-${id}`).value.trim();
+  const content = document.getElementById(`pco-${id}`).value.trim();
+  if (!title) return;
+  const { error } = await sb.from('blog_posts').update({ title, category: cat, author, excerpt, content }).eq('id', id);
+  if (error) { showToast('Erro ao salvar', 'error'); return; }
+  document.querySelector(`#post-${id} .post-item-title`).textContent = title;
+  document.querySelector(`#post-${id} .post-item-cat`).textContent = CAT_LABELS[cat] || cat;
+  showToast('Post salvo!');
+}
+
+async function togglePublish(id, pub) {
+  const { error } = await sb.from('blog_posts').update({ published: pub }).eq('id', id);
+  if (error) { showToast('Erro', 'error'); return; }
+  showToast(pub ? 'Post publicado!' : 'Post despublicado.');
+  await loadBlogDashboard();
+}
+
+async function deletePost(id) {
+  if (!confirm('Excluir este post permanentemente?')) return;
+  await sb.from('blog_posts').delete().eq('id', id);
+  document.getElementById(`post-${id}`)?.remove();
+  showToast('Post excluído.');
+}
+
+async function uploadPostCover(input, postId) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext  = file.name.split('.').pop();
+  const path = `${postId}.${ext}`;
+  const { error } = await sb.storage.from('blog-covers').upload(path, file, { upsert: true });
+  if (error) { showToast('Erro no upload', 'error'); return; }
+  const { data: { publicUrl } } = sb.storage.from('blog-covers').getPublicUrl(path);
+  await sb.from('blog_posts').update({ cover_url: publicUrl }).eq('id', postId);
+  await loadBlogDashboard();
+  document.getElementById(`post-${postId}`)?.classList.add('expanded');
+  showToast('Capa salva!');
+}
+
+/* ── Nova postagem ───────────────────────────── */
+let newPostCoverFile = null;
+
+function previewPostCover(input) {
+  const file = input.files[0];
+  if (!file) return;
+  newPostCoverFile = file;
+  const preview = document.getElementById('np-preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  document.getElementById('np-upload-label').textContent = file.name;
+}
+
+async function addPost(publish) {
+  const title   = document.getElementById('np-title').value.trim();
+  const cat     = document.getElementById('np-cat').value;
+  const author  = document.getElementById('np-author').value.trim();
+  const excerpt = document.getElementById('np-excerpt').value.trim();
+  const content = document.getElementById('np-content').value.trim();
+  if (!title) { showToast('Escreva um título', 'error'); return; }
+
+  const { data: existing } = await sb.from('blog_posts').select('display_order').order('display_order', { ascending: false }).limit(1);
+  const order = (existing?.[0]?.display_order ?? 0) + 1;
+
+  const { data, error } = await sb.from('blog_posts')
+    .insert({ title, category: cat, author, excerpt, content, published: publish, display_order: order })
+    .select().single();
+  if (error) { showToast('Erro ao criar post', 'error'); return; }
+
+  if (newPostCoverFile) {
+    document.getElementById('np-uploading').style.display = 'block';
+    const ext  = newPostCoverFile.name.split('.').pop();
+    const path = `${data.id}.${ext}`;
+    const { error: upErr } = await sb.storage.from('blog-covers').upload(path, newPostCoverFile, { upsert: true });
+    if (!upErr) {
+      const { data: { publicUrl } } = sb.storage.from('blog-covers').getPublicUrl(path);
+      await sb.from('blog_posts').update({ cover_url: publicUrl }).eq('id', data.id);
+      data.cover_url = publicUrl;
+    }
+    document.getElementById('np-uploading').style.display = 'none';
+  }
+
+  ['np-title','np-excerpt','np-content'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('np-author').value = 'Prof. Jorge Frias';
+  document.getElementById('np-preview').style.display = 'none';
+  document.getElementById('np-upload-label').textContent = '🖼 Escolher imagem';
+  newPostCoverFile = null;
+
+  const list = document.getElementById('post-list');
+  if (list.querySelector('[style*="Nenhum"]') || list.querySelector('[style*="Carregando"]')) list.innerHTML = '';
+  list.insertAdjacentHTML('beforeend', postItemHtml(data));
+  showToast(publish ? 'Post publicado!' : 'Rascunho salvo!');
+}
+
+/* ── Drag-and-drop reorder ──────────────────── */
+let dragSrc = null;
+
+function initDragDrop(listEl) {
+  if (!listEl || listEl.dataset.dragInit) return;
+  listEl.dataset.dragInit = '1';
+
+  listEl.addEventListener('dragstart', e => {
+    const item = e.target.closest('.member-item[draggable]');
+    if (!item) return;
+    dragSrc = item;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => item.classList.add('dragging'), 0);
+  });
+
+  listEl.addEventListener('dragend', () => {
+    if (dragSrc) dragSrc.classList.remove('dragging');
+    listEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragSrc = null;
+  });
+
+  listEl.addEventListener('dragover', e => {
+    e.preventDefault();
+    const over = e.target.closest('.member-item');
+    if (!over || over === dragSrc) return;
+    listEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    over.classList.add('drag-over');
+    const mid = over.getBoundingClientRect().top + over.offsetHeight / 2;
+    listEl.insertBefore(dragSrc, e.clientY < mid ? over : over.nextSibling);
+  });
+
+  listEl.addEventListener('drop', async e => {
+    e.preventDefault();
+    listEl.querySelectorAll('.drag-over, .dragging').forEach(el => el.classList.remove('drag-over', 'dragging'));
+    await saveOrder(listEl);
+  });
+}
+
+async function saveOrder(listEl) {
+  const items = [...listEl.querySelectorAll('.member-item')];
+  const results = await Promise.all(
+    items.map((item, idx) =>
+      sb.from('members').update({ display_order: idx + 1 }).eq('id', item.dataset.memberId)
+    )
+  );
+  if (results.some(r => r.error)) { showToast('Erro ao salvar ordem', 'error'); return; }
+  showToast('Ordem salva!');
+}
+</script>
+</body>
+</html>
