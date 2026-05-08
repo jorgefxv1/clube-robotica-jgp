@@ -1,0 +1,107 @@
+CHECKLIST — Colocar o site no ar (Clube de Robótica JGP)
+==========================================================
+
+Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
+
+----------------------------------------------------------
+1. HOSPEDAGEM
+----------------------------------------------------------
+[ ] 1.1 Escolher provedor gratuito (recomendado: Cloudflare Pages)
+        Alternativas: GitHub Pages, Netlify, Vercel
+[ ] 1.2 Criar conta no provedor escolhido
+
+----------------------------------------------------------
+2. VERSIONAMENTO (GIT)
+----------------------------------------------------------
+[x] 2.1 Rodar `git init` na pasta do projeto
+        -> repo criado em ./site/ (isolado dos arquivos pessoais)
+        -> branch padrão: main
+[x] 2.2 Criar .gitignore (excluir arquivos pessoais, .env, etc.)
+        -> site/.gitignore (DS_Store, .env, logs, IDEs, node_modules)
+[x] 2.3 Criar repositório no GitHub
+        -> https://github.com/jorgefxv1/clube-robotica-jgp (público)
+[x] 2.4 Primeiro commit + push
+        -> commit c7723b3 + push para origin/main OK
+        -> credencial PAT salva no Keychain (osxkeychain helper)
+
+----------------------------------------------------------
+3. PONTO DE ENTRADA DO SITE
+----------------------------------------------------------
+[x] 3.1 Decidir: renomear robotica-site.html -> index.html
+        -> renomeado para site/index.html
+[x] 3.2 Conferir todos os links internos após a mudança
+        -> admin.html: href "robotica-site.html" -> "index.html" (linha 952)
+
+----------------------------------------------------------
+4. SUPABASE — SEGURANÇA (CRÍTICO)
+----------------------------------------------------------
+[x] 4.1 Listar tabelas existentes (list_tables)
+        -> teams (5), members (19), history_events (0), blog_posts (2)
+[x] 4.2 Rodar get_advisors para ver alertas de segurança
+        -> 3 WARNs (nenhum ERROR): buckets blog-covers e history-photos
+           permitem listagem; leaked password protection desativado
+[x] 4.3 Confirmar que RLS (Row Level Security) está ligado em
+        TODAS as tabelas
+        -> OK: RLS ativo nas 4 tabelas do schema public
+[x] 4.4 Revisar políticas RLS: leitura/escrita só para quem deve
+        ACHADO: leitura pública OK, mas TODOS os autenticados têm
+        ALL (INSERT/UPDATE/DELETE) em todas as tabelas.
+        Risco: se signup público estiver aberto, qualquer um cria
+        conta e edita tudo.
+[x] 4.5 Verificar se existe tabela/coluna de "role" (admin)
+        ACHADO: NÃO existe. Hoje só há 1 usuário (Jorge).
+
+[x] 4.5.b Criar estrutura de role (migration aplicada 2026-05-07):
+          [x] Tabela public.profiles(user_id, role, created_at)
+          [x] Trigger handle_new_user (cria profile no signup)
+          [x] Função public.is_admin()
+          [x] Policies admin_all_* nas 4 tabelas
+          [x] Policies em profiles (user lê o próprio; só admin altera)
+          [x] Jorge promovido a admin
+[x] 4.6 Restringir SELECT dos buckets blog-covers e history-photos
+        -> SELECT amplo removido (URL direta segue funcionando)
+        -> upload/delete/update apertados para exigir is_admin()
+        -> WARNs dos buckets sumiram do advisor
+[N/A] 4.7 "Leaked Password Protection" exige plano Pro do Supabase.
+          Projeto está no Free — funcionalidade indisponível.
+          Mitigação: orientar admins a usar senhas fortes/únicas.
+[~] 4.8 (aceito) is_admin() é SECURITY DEFINER chamável por
+        authenticated — INTENCIONAL: o admin.html usa rpc('is_admin')
+        para validar role. Linter alerta mas não é vulnerabilidade.
+
+----------------------------------------------------------
+5. SUPABASE — CONFIGURAÇÃO DE URLS
+----------------------------------------------------------
+[ ] 5.1 Authentication > URL Configuration: adicionar Site URL
+        pública (ex.: https://clube-jgp.pages.dev)
+[ ] 5.2 Adicionar Redirect URLs (login, recuperação de senha)
+[ ] 5.3 API > CORS: liberar o domínio público
+
+----------------------------------------------------------
+6. PROTEÇÃO DO ADMIN.HTML
+----------------------------------------------------------
+[ ] 6.1 Garantir que admin.html exige login antes de carregar dados
+[x] 6.2 No admin.html, chamar rpc('is_admin') após login e bloquear
+        UI se retornar false (RLS já protege os dados; isso é UX)
+        -> implementado em onAuthStateChange (admin.html:1197)
+[ ] 6.3 Testar acesso anônimo a /admin.html (deve bloquear dados)
+[ ] 6.4 Testar com usuário "member" recém-criado (não pode editar nada)
+
+----------------------------------------------------------
+7. DOMÍNIO
+----------------------------------------------------------
+[ ] 7.1 Usar subdomínio gratuito do provedor (*.pages.dev etc.)
+[ ] 7.2 (Opcional, futuro) Comprar domínio próprio (.com.br ~R$40/ano)
+[ ] 7.3 (Opcional) Configurar DNS no provedor
+
+----------------------------------------------------------
+8. TESTES EM PRODUÇÃO
+----------------------------------------------------------
+[ ] 8.1 Abrir o site no celular, fora da rede da escola
+[ ] 8.2 Testar cadastro e login
+[ ] 8.3 Testar fluxos do admin
+[ ] 8.4 Verificar Console do navegador (erros CORS, 401, etc.)
+[ ] 8.5 Testar tema claro/escuro e responsividade
+
+==========================================================
+Última atualização: 2026-05-08 (seções 2, 3 e 4 fechadas — pronto para deploy/seção 1)
