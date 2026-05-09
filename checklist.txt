@@ -103,5 +103,38 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
 [ ] 8.4 Verificar Console do navegador (erros CORS, 401, etc.)
 [ ] 8.5 Testar tema claro/escuro e responsividade
 
+----------------------------------------------------------
+9. PENDÊNCIAS ABERTAS (retomar depois)
+----------------------------------------------------------
+[ ] 9.1 Investigar relato do Jorge: "index.html está fora, não
+        carrega algumas informações" (2026-05-08)
+        Diagnóstico parcial feito:
+        -> Backend Supabase OK: teams=5, members=19, blog_posts=2
+           (publicados), history_events=0 (vazia, esperado)
+        -> RLS policies de leitura pública OK em todas as tabelas
+        -> Logs API últimas 24h: todas chamadas do site = 200 OK
+        -> Hipótese principal: a seção "História" aparece vazia
+           porque a tabela history_events tem 0 registros
+        FALTA: Jorge confirmar QUAL seção parece quebrada e checar
+        console do navegador (F12) se há erros em vermelho
+
+[ ] 9.2 Compartilhamento do projeto com colega (Claude Code Pro):
+        já preparado o caminho (CLAUDE.md + checklist no repo,
+        commit cee9c69), mas falta:
+        -> Adicionar colega como collaborator no GitHub
+           (Settings > Access > Add people)
+        -> Decidir workflow: commits diretos na main vs branches+PR
+        -> Combinar regra: sempre `git pull` antes de editar
+        -> Avaliar se colega também precisa virar admin no Supabase
+
+[ ] 9.3 Próximos passos do deploy (ordem sugerida):
+        a) Seção 1 — Hospedagem (Cloudflare Pages recomendado;
+           conecta direto ao GitHub para deploy automático)
+        b) Seção 5 — URLs no Supabase (Site URL, Redirect URLs,
+           CORS) apontando para o domínio público
+        c) Seção 6 — Testes do admin (6.1, 6.3, 6.4)
+        d) Seção 7 — Domínio (subdomínio *.pages.dev grátis primeiro)
+        e) Seção 8 — Testes em produção (mobile, fora da escola)
+
 ==========================================================
-Última atualização: 2026-05-08 (seções 2, 3 e 4 fechadas — pronto para deploy/seção 1)
+Última atualização: 2026-05-08 (encerrado o dia; retomar pela seção 9)
