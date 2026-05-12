@@ -173,10 +173,28 @@
       .theme-toggle svg { transition: opacity 0.15s ease; transform: none !important; }
     }
 
+    /* ── Loading splash ── */
+    #loading-screen {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      background: var(--bg); z-index: 9999;
+    }
+    #loading-screen.hidden { display: none; }
+    .loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-screen p { font-size: 0.8em; color: var(--muted); }
+
     /* ── Login ── */
     #login-screen {
       min-height: 100vh;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 20px;
@@ -1040,6 +1058,11 @@
 <body>
 
 <!-- ── LOGIN ─────────────────────────────────── -->
+<div id="loading-screen">
+  <div class="loading-spinner"></div>
+  <p>Verificando sessão…</p>
+</div>
+
 <div id="login-screen">
   <button id="theme-toggle-login" class="theme-toggle" type="button" role="switch" aria-checked="false"
           aria-label="Alternar tema claro e escuro" title="Alternar tema (claro/escuro)"
@@ -1341,22 +1364,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 sb.auth.onAuthStateChange(async (event, session) => {
+  const loading  = document.getElementById('loading-screen');
+  const loginScr = document.getElementById('login-screen');
+  const dash     = document.getElementById('dashboard');
+
   if (session) {
     const { data: isAdmin, error: roleErr } = await sb.rpc('is_admin');
     if (roleErr || !isAdmin) {
       await sb.auth.signOut();
+      loading.classList.add('hidden');
+      loginScr.style.display = 'flex';
       const err = document.getElementById('login-error');
       err.textContent = 'Acesso restrito a administradores.';
       err.style.display = 'block';
       return;
     }
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
+    loading.classList.add('hidden');
+    loginScr.style.display = 'none';
+    dash.style.display = 'block';
     document.getElementById('user-email-display').textContent = session.user.email;
     loadDashboard();
   } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('dashboard').style.display = 'none';
+    loading.classList.add('hidden');
+    loginScr.style.display = 'flex';
+    dash.style.display = 'none';
     document.getElementById('login-btn').disabled = false;
     document.getElementById('login-btn').textContent = 'Entrar';
     document.getElementById('login-error').style.display = 'none';
