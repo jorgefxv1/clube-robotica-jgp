@@ -1301,6 +1301,8 @@ const SUPABASE_URL = 'https://wqpelifwwzshtntboeib.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcGVsaWZ3d3pzaHRudGJvZWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjkxODksImV4cCI6MjA5MzcwNTE4OX0.yWkCVGJzoeV4svgSr8c-rSLww6UhfxKpipRYTmZLte4';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let currentUserRole = null;
+
 /* ── Theme toggle (compartilha chave 'theme' com o site) ── */
 function applyTheme(theme, opts) {
   opts = opts || {};
@@ -1363,14 +1365,28 @@ document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons({ el: document.getElementById('new-icon-btn') });
 });
 
+/* Fallback: se o Supabase não responder em 8s, exibe tela de login */
+const _authTimeout = setTimeout(() => {
+  const loading  = document.getElementById('loading-screen');
+  const loginScr = document.getElementById('login-screen');
+  if (!loading.classList.contains('hidden')) {
+    loading.classList.add('hidden');
+    loginScr.style.display = 'flex';
+    const err = document.getElementById('login-error');
+    err.textContent = 'Tempo esgotado ao verificar sessão. Tente fazer login.';
+    err.style.display = 'block';
+  }
+}, 8000);
+
 sb.auth.onAuthStateChange(async (event, session) => {
+  clearTimeout(_authTimeout);
   const loading  = document.getElementById('loading-screen');
   const loginScr = document.getElementById('login-screen');
   const dash     = document.getElementById('dashboard');
 
   if (session) {
-    const { data: isAdmin, error: roleErr } = await sb.rpc('is_admin');
-    if (roleErr || !isAdmin) {
+    const { data: role, error: roleErr } = await sb.rpc('get_my_role');
+    if (roleErr || (role !== 'admin' && role !== 'editor')) {
       await sb.auth.signOut();
       loading.classList.add('hidden');
       loginScr.style.display = 'flex';
@@ -1379,11 +1395,17 @@ sb.auth.onAuthStateChange(async (event, session) => {
       err.style.display = 'block';
       return;
     }
+    currentUserRole = role;
     loading.classList.add('hidden');
     loginScr.style.display = 'none';
     dash.style.display = 'block';
     document.getElementById('user-email-display').textContent = session.user.email;
-    loadDashboard();
+    applyRoleRestrictions();
+    if (currentUserRole === 'editor') {
+      enterSection('blog');
+    } else {
+      loadDashboard();
+    }
   } else {
     loading.classList.add('hidden');
     loginScr.style.display = 'flex';
@@ -1601,6 +1623,17 @@ async function addMember(teamId) {
   document.querySelector(`#team-section-${teamId} .team-header-count`).textContent =
     `${count} integrante${count !== 1 ? 's' : ''}`;
   showToast('Membro adicionado!');
+}
+
+/* ── Role restrictions ──────────────────────── */
+function applyRoleRestrictions() {
+  if (currentUserRole !== 'editor') return;
+  ['equipes', 'historia'].forEach(s => {
+    const card = document.querySelector(`[aria-label="Gerenciar ${s === 'equipes' ? 'equipes' : 'história'}"]`);
+    if (card) card.style.display = 'none';
+    const tab = document.querySelector(`.tab-btn[data-tab="${s}"]`);
+    if (tab) tab.style.display = 'none';
+  });
 }
 
 /* ── Tabs ───────────────────────────────────── */
