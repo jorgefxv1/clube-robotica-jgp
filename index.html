@@ -2644,6 +2644,7 @@ const LUCIDE_SVG = {
 function renderIcon(icon) {
   const paths = LUCIDE_SVG[icon];
   if (paths) return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  if (icon && icon.startsWith('http')) return `<img src="${icon}" alt="ícone da equipe" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
   return icon || '🤖';
 }
 

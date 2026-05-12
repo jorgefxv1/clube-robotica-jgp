@@ -565,6 +565,17 @@
     @media (max-width: 480px) {
       .icon-modal-grid { grid-template-columns: repeat(4, 1fr); }
     }
+    .icon-upload-zone {
+      display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+      border: 1.5px dashed var(--border); border-radius: 12px;
+      padding: 16px; margin-bottom: 18px; cursor: pointer;
+      color: var(--muted); font-size: 0.8em; text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .icon-upload-zone:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .icon-upload-zone.uploading { opacity: 0.6; pointer-events: none; }
+    .icon-pick-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .team-emoji img { width: 1.4em; height: 1.4em; object-fit: cover; border-radius: 4px; }
 
     /* ── Add team ── */
     .add-team-card {
@@ -1253,6 +1264,11 @@
       <span>Escolher ícone da equipe</span>
       <button type="button" onclick="document.getElementById('icon-picker-modal').classList.remove('open')">✕</button>
     </div>
+    <div class="icon-upload-zone" id="icon-upload-zone" onclick="document.getElementById('icon-file-input').click()">
+      <input type="file" id="icon-file-input" accept="image/*" style="display:none" onchange="uploadTeamIcon(this)">
+      <span style="font-size:1.4em">🖼️</span>
+      <span>Clique para enviar imagem do aluno<br><span style="font-size:0.9em;opacity:0.7">PNG, JPG, GIF, WEBP — máx. 2 MB</span></span>
+    </div>
     <div class="icon-modal-grid" id="icon-modal-grid"></div>
   </div>
 </div>
@@ -1399,7 +1415,7 @@ function memberHtml(m, teamId) {
 
 function renderTeamSection(t) {
   const membersHtml = t.members.map(m => memberHtml(m, t.id)).join('');
-  const iconHtml = isLucideIcon(t.icon) ? `<i data-lucide="${t.icon}"></i>` : (t.icon || '🤖');
+  const iconHtml = isLucideIcon(t.icon) ? `<i data-lucide="${t.icon}"></i>` : isImageUrl(t.icon) ? `<img src="${t.icon}" alt="ícone">` : (t.icon || '🤖');
 
   return `
     <div class="team-section" id="team-section-${t.id}">
@@ -2026,6 +2042,12 @@ const ICON_LIST = [
 const LUCIDE_ICON_NAMES = new Set(ICON_LIST.map(i => i.name));
 
 function isLucideIcon(v) { return LUCIDE_ICON_NAMES.has(v); }
+function isImageUrl(v) { return v && v.startsWith('http'); }
+function iconHtml(icon) {
+  if (isLucideIcon(icon)) return `<i data-lucide="${icon}"></i>`;
+  if (isImageUrl(icon))   return `<img src="${icon}" alt="ícone da equipe">`;
+  return icon || '🤖';
+}
 
 let _iconTarget = null;
 
@@ -2039,17 +2061,37 @@ function openIconPicker(targetId) {
      </button>`
   ).join('');
   lucide.createIcons({ el: grid });
+  document.getElementById('icon-file-input').value = '';
   document.getElementById('icon-picker-modal').classList.add('open');
 }
 
-function selectIcon(iconName) {
-  const inputId  = _iconTarget === 'new' ? 'new-team-icon'  : `icon-${_iconTarget}`;
-  const btnId    = _iconTarget === 'new' ? 'new-icon-btn'   : `icon-btn-${_iconTarget}`;
-  document.getElementById(inputId).value = iconName;
+function selectIcon(value) {
+  const inputId = _iconTarget === 'new' ? 'new-team-icon' : `icon-${_iconTarget}`;
+  const btnId   = _iconTarget === 'new' ? 'new-icon-btn'  : `icon-btn-${_iconTarget}`;
+  document.getElementById(inputId).value = value;
   const btn = document.getElementById(btnId);
-  btn.innerHTML = `<i data-lucide="${iconName}"></i>`;
-  lucide.createIcons({ el: btn });
+  btn.innerHTML = iconHtml(value);
+  if (isLucideIcon(value)) lucide.createIcons({ el: btn });
   document.getElementById('icon-picker-modal').classList.remove('open');
+}
+
+async function uploadTeamIcon(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('Imagem maior que 2 MB', 'error'); return; }
+  const zone = document.getElementById('icon-upload-zone');
+  zone.classList.add('uploading');
+  zone.querySelector('span:last-child').textContent = 'Enviando…';
+
+  const ext  = file.name.split('.').pop();
+  const path = `${_iconTarget}-${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from('team-icons').upload(path, file, { upsert: true });
+  zone.classList.remove('uploading');
+  zone.querySelector('span:last-child').innerHTML = 'Clique para enviar imagem do aluno<br><span style="font-size:0.9em;opacity:0.7">PNG, JPG, GIF, WEBP — máx. 2 MB</span>';
+
+  if (error) { showToast('Erro no upload', 'error'); return; }
+  const { data } = sb.storage.from('team-icons').getPublicUrl(path);
+  selectIcon(data.publicUrl);
 }
 
 function closeIconPicker(event) {
