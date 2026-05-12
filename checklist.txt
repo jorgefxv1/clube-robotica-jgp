@@ -106,17 +106,22 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
 ----------------------------------------------------------
 9. PENDÊNCIAS ABERTAS (retomar depois)
 ----------------------------------------------------------
-[ ] 9.1 Investigar relato do Jorge: "index.html está fora, não
+[x] 9.1 Investigar relato do Jorge: "index.html está fora, não
         carrega algumas informações" (2026-05-08)
-        Diagnóstico parcial feito:
-        -> Backend Supabase OK: teams=5, members=19, blog_posts=2
-           (publicados), history_events=0 (vazia, esperado)
-        -> RLS policies de leitura pública OK em todas as tabelas
-        -> Logs API últimas 24h: todas chamadas do site = 200 OK
-        -> Hipótese principal: a seção "História" aparece vazia
-           porque a tabela history_events tem 0 registros
-        FALTA: Jorge confirmar QUAL seção parece quebrada e checar
-        console do navegador (F12) se há erros em vermelho
+        CAUSA RAIZ ENCONTRADA E CORRIGIDA (2026-05-12):
+        -> blog_posts retornava 401; history_events retornava 200
+        -> Postgres log: "permission denied for function is_admin"
+        -> A policy admin_all_blog_posts (roles=public) chama is_admin()
+           mas o role 'anon' não tinha EXECUTE na função
+        -> history_events funcionava por short-circuit: sua policy
+           pública é `true` (trivialmente verdadeira), então o banco
+           nunca chegava a avaliar is_admin()
+        -> blog_posts falha porque sua policy pública é `published=true`
+           (não-trivial), forçando avaliação de is_admin() → erro
+        CORREÇÃO APLICADA: GRANT EXECUTE ON FUNCTION public.is_admin() TO anon
+        -> migration: grant_is_admin_to_anon
+        -> history_events (4 registros) e blog_posts (2 publicados)
+           devem carregar normalmente agora
 
 [ ] 9.2 Compartilhamento do projeto com colega (Claude Code Pro):
         já preparado o caminho (CLAUDE.md + checklist no repo,

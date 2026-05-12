@@ -18,6 +18,53 @@
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  /* SVGs inline — sem CDN, sem latência */
+  const LUCIDE_SVG = {
+    'bot':            '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+    'cpu':            '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
+    'zap':            '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    'wrench':         '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    'code-2':         '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/>',
+    'settings':       '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    'shield':         '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    'award':          '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>',
+    'trophy':         '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+    'rocket':         '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+    'target':         '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    'brain':          '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>',
+    'monitor':        '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+    'wifi':           '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/>',
+    'star':           '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    'users':          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'lightbulb':      '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+    'compass':        '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
+    'eye':            '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    'flask-conical':  '<path d="M10 2v7.527a2 2 0 0 1-.211.897L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.126A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+    'satellite':      '<path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/>',
+    'microscope':     '<path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/>',
+    'graduation-cap': '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+    'hammer':         '<path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14"/>',
+  };
+
+  function makeSVG(name) {
+    const paths = LUCIDE_SVG[name] || '';
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  }
+
+  /* Substitui todos os <i data-lucide> dentro de um elemento */
+  function renderLucideIcons(el) {
+    if (!el) return;
+    el.querySelectorAll('i[data-lucide]').forEach(i => {
+      const name = i.getAttribute('data-lucide');
+      const svg = document.createRange().createContextualFragment(makeSVG(name));
+      i.replaceWith(svg);
+    });
+  }
+
+  /* Expõe interface compatível com o código existente */
+  const lucide = { createIcons: ({ el } = {}) => renderLucideIcons(el || document.body) };
+  </script>
   <style>
     :root, [data-theme="dark"] {
       --bg:          #07070F;
@@ -329,7 +376,8 @@
 
     .team-header:hover { background: rgba(255,255,255,0.02); }
 
-    .team-emoji { font-size: 1.3em; }
+    .team-emoji { font-size: 1.3em; display:flex; align-items:center; justify-content:center; width:1.6em; height:1.6em; }
+    .team-emoji svg { width:1em; height:1em; stroke:var(--accent); stroke-width:2; fill:none; }
 
     .team-header-info { flex: 1; }
     .team-header-name { font-size: 0.95em; font-weight: 600; }
@@ -453,6 +501,70 @@
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.success { border-color: rgba(52,211,153,0.35); color: var(--green); }
     .toast.error   { border-color: rgba(248,113,113,0.35); color: var(--red); }
+
+    /* ── Icon picker button ── */
+    .icon-pick-btn {
+      width: 64px; height: 64px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5em;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .icon-pick-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .icon-pick-btn svg { width: 26px; height: 26px; stroke: var(--accent); stroke-width: 1.8; fill: none; }
+
+    /* ── Icon picker modal ── */
+    .icon-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none; align-items: center; justify-content: center;
+    }
+    .icon-modal-overlay.open { display: flex; }
+    .icon-modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      width: min(520px, 95vw);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .icon-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .icon-modal-header span { font-size: 0.9em; font-weight: 600; color: var(--text); }
+    .icon-modal-header button {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.1em; cursor: pointer; padding: 4px 8px;
+      border-radius: 6px; transition: color 0.2s;
+    }
+    .icon-modal-header button:hover { color: var(--text); }
+    .icon-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    .icon-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 12px 4px;
+      border-radius: 12px;
+      border: 1.5px solid transparent;
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .icon-cell:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .icon-cell svg { width: 22px; height: 22px; stroke: var(--accent); stroke-width: 1.8; fill: none; }
+    .icon-cell span { font-size: 0.62em; color: var(--muted); text-align: center; }
+    @media (max-width: 480px) {
+      .icon-modal-grid { grid-template-columns: repeat(4, 1fr); }
+    }
 
     /* ── Add team ── */
     .add-team-card {
@@ -1014,9 +1126,12 @@
       <div class="add-team-card">
         <h3>+ Nova equipe</h3>
         <div class="add-team-grid">
-          <div class="field">
+          <div class="field" style="flex:none">
             <label>Ícone</label>
-            <input type="text" id="new-team-icon" placeholder="🤖" maxlength="2">
+            <button class="icon-pick-btn" id="new-icon-btn" type="button" onclick="openIconPicker('new')" title="Escolher ícone">
+              <i data-lucide="bot"></i>
+            </button>
+            <input type="hidden" id="new-team-icon" value="bot">
           </div>
           <div class="field">
             <label>Nome</label>
@@ -1131,6 +1246,17 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ── Icon Picker Modal ── -->
+<div id="icon-picker-modal" class="icon-modal-overlay" onclick="closeIconPicker(event)">
+  <div class="icon-modal-box">
+    <div class="icon-modal-header">
+      <span>Escolher ícone da equipe</span>
+      <button type="button" onclick="document.getElementById('icon-picker-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="icon-modal-grid" id="icon-modal-grid"></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://wqpelifwwzshtntboeib.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxcGVsaWZ3d3pzaHRudGJvZWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjkxODksImV4cCI6MjA5MzcwNTE4OX0.yWkCVGJzoeV4svgSr8c-rSLww6UhfxKpipRYTmZLte4';
@@ -1194,6 +1320,10 @@ document.getElementById('password').addEventListener('keydown', e => {
   if (e.key === 'Enter') login();
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons({ el: document.getElementById('new-icon-btn') });
+});
+
 sb.auth.onAuthStateChange(async (event, session) => {
   if (session) {
     const { data: isAdmin, error: roleErr } = await sb.rpc('is_admin');
@@ -1245,6 +1375,8 @@ async function loadDashboard() {
     return renderTeamSection(t);
   }).join('');
 
+  lucide.createIcons({ el: container });
+
   teams.forEach(t => {
     initDragDrop(document.getElementById(`members-${t.id}`));
   });
@@ -1267,11 +1399,12 @@ function memberHtml(m, teamId) {
 
 function renderTeamSection(t) {
   const membersHtml = t.members.map(m => memberHtml(m, t.id)).join('');
+  const iconHtml = isLucideIcon(t.icon) ? `<i data-lucide="${t.icon}"></i>` : (t.icon || '🤖');
 
   return `
     <div class="team-section" id="team-section-${t.id}">
       <div class="team-header" onclick="toggleTeam('${t.id}')">
-        <span class="team-emoji">${t.icon}</span>
+        <span class="team-emoji">${iconHtml}</span>
         <div class="team-header-info">
           <div class="team-header-name">${esc(t.name)}</div>
           <div class="team-header-count">${t.members.length} integrante${t.members.length !== 1 ? 's' : ''}</div>
@@ -1280,9 +1413,12 @@ function renderTeamSection(t) {
       </div>
       <div class="team-body">
         <div class="team-edit-row">
-          <div class="field">
+          <div class="field" style="flex:none">
             <label>Ícone</label>
-            <input type="text" id="icon-${t.id}" value="${esc(t.icon)}" maxlength="2" style="width:70px">
+            <button class="icon-pick-btn" id="icon-btn-${t.id}" type="button" onclick="openIconPicker('${t.id}')" title="Escolher ícone">
+              ${iconHtml}
+            </button>
+            <input type="hidden" id="icon-${t.id}" value="${esc(t.icon)}">
           </div>
           <div class="field">
             <label>Nome da equipe</label>
@@ -1330,7 +1466,13 @@ async function saveTeam(id) {
   const { error } = await sb.from('teams').update({ name, icon }).eq('id', id);
   if (error) { showToast('Erro ao salvar', 'error'); return; }
   document.querySelector(`#team-section-${id} .team-header-name`).textContent = name;
-  document.querySelector(`#team-section-${id} .team-emoji`).textContent = icon;
+  const emojiEl = document.querySelector(`#team-section-${id} .team-emoji`);
+  if (isLucideIcon(icon)) {
+    emojiEl.innerHTML = `<i data-lucide="${icon}"></i>`;
+    lucide.createIcons({ el: emojiEl });
+  } else {
+    emojiEl.textContent = icon;
+  }
   showToast('Equipe salva!');
 }
 
@@ -1361,6 +1503,7 @@ async function addTeam() {
 
   const container = document.getElementById('teams-list');
   container.insertAdjacentHTML('beforeend', renderTeamSection({ ...data, members: [] }));
+  lucide.createIcons({ el: container.lastElementChild });
   showToast('Equipe criada!');
 }
 
@@ -1850,6 +1993,68 @@ function initDragDrop(listEl) {
     listEl.querySelectorAll('.drag-over, .dragging').forEach(el => el.classList.remove('drag-over', 'dragging'));
     await saveOrder(listEl);
   });
+}
+
+/* ── Icon picker ─────────────────────────────── */
+const ICON_LIST = [
+  { name: 'bot',            label: 'Robô' },
+  { name: 'cpu',            label: 'CPU' },
+  { name: 'zap',            label: 'Energia' },
+  { name: 'wrench',         label: 'Mecânica' },
+  { name: 'code-2',         label: 'Código' },
+  { name: 'settings',       label: 'Config' },
+  { name: 'shield',         label: 'Defesa' },
+  { name: 'award',          label: 'Prêmio' },
+  { name: 'trophy',         label: 'Troféu' },
+  { name: 'rocket',         label: 'Foguete' },
+  { name: 'target',         label: 'Alvo' },
+  { name: 'brain',          label: 'IA' },
+  { name: 'monitor',        label: 'Monitor' },
+  { name: 'wifi',           label: 'Conectado' },
+  { name: 'star',           label: 'Destaque' },
+  { name: 'users',          label: 'Equipe' },
+  { name: 'lightbulb',      label: 'Ideia' },
+  { name: 'compass',        label: 'Direção' },
+  { name: 'eye',            label: 'Visão' },
+  { name: 'flask-conical',  label: 'Ciência' },
+  { name: 'satellite',      label: 'Satélite' },
+  { name: 'microscope',     label: 'Pesquisa' },
+  { name: 'graduation-cap', label: 'Educação' },
+  { name: 'hammer',         label: 'Construção' },
+];
+
+const LUCIDE_ICON_NAMES = new Set(ICON_LIST.map(i => i.name));
+
+function isLucideIcon(v) { return LUCIDE_ICON_NAMES.has(v); }
+
+let _iconTarget = null;
+
+function openIconPicker(targetId) {
+  _iconTarget = targetId;
+  const grid = document.getElementById('icon-modal-grid');
+  grid.innerHTML = ICON_LIST.map(ic =>
+    `<button class="icon-cell" type="button" onclick="selectIcon('${ic.name}')" title="${ic.label}">
+       <i data-lucide="${ic.name}"></i>
+       <span>${ic.label}</span>
+     </button>`
+  ).join('');
+  lucide.createIcons({ el: grid });
+  document.getElementById('icon-picker-modal').classList.add('open');
+}
+
+function selectIcon(iconName) {
+  const inputId  = _iconTarget === 'new' ? 'new-team-icon'  : `icon-${_iconTarget}`;
+  const btnId    = _iconTarget === 'new' ? 'new-icon-btn'   : `icon-btn-${_iconTarget}`;
+  document.getElementById(inputId).value = iconName;
+  const btn = document.getElementById(btnId);
+  btn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+  lucide.createIcons({ el: btn });
+  document.getElementById('icon-picker-modal').classList.remove('open');
+}
+
+function closeIconPicker(event) {
+  if (event && !event.target.classList.contains('icon-modal-overlay')) return;
+  document.getElementById('icon-picker-modal').classList.remove('open');
 }
 
 async function saveOrder(listEl) {

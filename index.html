@@ -633,6 +633,112 @@
 
     .tl-item.active .tl-list li::before { color: var(--accent); }
 
+    /* ─── BOTÃO VER DETALHES (CRONOGRAMA) ──────────────── */
+    .tl-details-btn {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72em;
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      letter-spacing: 0.03em;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .tl-item.active .tl-details-btn {
+      opacity: 1;
+      pointer-events: auto;
+      color: var(--accent);
+      border-color: var(--accent-mid);
+    }
+    .tl-item.active .tl-details-btn:hover {
+      background: var(--accent-soft);
+    }
+
+    /* ─── MODAL DETALHES FASE ───────────────────────────── */
+    .phase-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      z-index: 1200;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .phase-modal-overlay.open { display: flex; }
+    .phase-modal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      width: min(600px, 100%);
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .phase-modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 8px; gap: 16px;
+    }
+    .phase-modal-num {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1em; font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: 0 0 18px var(--accent-mid);
+    }
+    .phase-modal-title { font-size: 1.15em; font-weight: 700; color: var(--text); }
+    .phase-modal-date  { font-size: 0.75em; color: var(--accent); font-weight: 600; margin-top: 3px; }
+    .phase-modal-close {
+      background: none; border: none;
+      color: var(--muted); font-size: 1.2em;
+      cursor: pointer; padding: 4px 8px; border-radius: 8px;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .phase-modal-close:hover { color: var(--text); }
+    .phase-modal-goal {
+      font-size: 0.83em; color: var(--text-soft);
+      border-left: 2px solid var(--accent);
+      padding: 8px 14px;
+      margin: 16px 0 20px;
+      background: var(--accent-soft);
+      border-radius: 0 8px 8px 0;
+    }
+    .phase-modal-tasks {
+      list-style: none; display: flex; flex-direction: column; gap: 6px;
+    }
+    .phase-modal-tasks li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.82em; color: var(--text-soft);
+      padding: 8px 12px;
+      border-radius: 9px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .phase-modal-tasks li::before {
+      content: '○';
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .phase-modal-result {
+      margin-top: 20px;
+      font-size: 0.8em;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
+    .phase-modal-result strong { color: var(--text-soft); }
+
     /* ─── EQUIPES ────────────────────────────────────────── */
     .teams-grid {
       display: grid;
@@ -1680,6 +1786,125 @@
         padding: 24px 20px;
       }
     }
+    /* ─── BOT OBR ────────────────────────────────────────── */
+    .obr-fab {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 24px rgba(34,211,238,0.45);
+      z-index: 1100;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .obr-fab:hover { transform: scale(1.08); box-shadow: 0 6px 32px rgba(34,211,238,0.6); }
+    .obr-fab svg { width: 26px; height: 26px; stroke: var(--btn-fg); stroke-width: 2; fill: none; }
+
+    .obr-chat {
+      position: fixed;
+      bottom: 96px; right: 28px;
+      width: min(380px, calc(100vw - 40px));
+      max-height: 520px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 16px 60px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column;
+      z-index: 1100;
+      transform: translateY(20px) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .obr-chat.open {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .obr-chat-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .obr-chat-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--accent-soft);
+      border: 1.5px solid var(--accent-mid);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .obr-chat-avatar svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 2; fill: none; }
+    .obr-chat-head-info { flex: 1; }
+    .obr-chat-head-name { font-size: 0.85em; font-weight: 700; color: var(--text); }
+    .obr-chat-head-sub  { font-size: 0.68em; color: var(--accent); }
+    .obr-chat-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.1em; cursor: pointer; padding: 4px 8px;
+      border-radius: 8px; transition: color 0.2s;
+    }
+    .obr-chat-close:hover { color: var(--text); }
+    .obr-messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .obr-msg {
+      max-width: 88%;
+      font-size: 0.82em;
+      line-height: 1.55;
+      padding: 10px 14px;
+      border-radius: 14px;
+      word-break: break-word;
+    }
+    .obr-msg.bot {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-soft);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .obr-msg.user {
+      background: var(--accent);
+      color: var(--btn-fg);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      font-weight: 500;
+    }
+    .obr-msg.typing { color: var(--muted); font-style: italic; }
+    .obr-input-row {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px;
+    }
+    .obr-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 13px;
+      color: var(--text);
+      font-size: 0.82em;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s;
+      max-height: 80px;
+    }
+    .obr-input:focus { border-color: var(--accent-mid); }
+    .obr-send {
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      width: 38px; height: 38px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .obr-send:disabled { opacity: 0.4; cursor: default; }
+    .obr-send svg { width: 16px; height: 16px; stroke: var(--btn-fg); stroke-width: 2.5; fill: none; }
   </style>
 </head>
 <body>
@@ -1982,6 +2207,7 @@
         <li>Definição de chassis e sensores</li>
         <li>Esboço do robô</li>
       </ul>
+      <button class="tl-details-btn" onclick="event.stopPropagation(); openPhaseModal(0)">Ver detalhes →</button>
     </div>
 
     <div class="tl-item" onclick="activatePhase(this)">
@@ -1994,6 +2220,7 @@
         <li>Conexão dos sensores</li>
         <li>Teste de movimentação</li>
       </ul>
+      <button class="tl-details-btn" onclick="event.stopPropagation(); openPhaseModal(1)">Ver detalhes →</button>
     </div>
 
     <div class="tl-item" onclick="activatePhase(this)">
@@ -2006,6 +2233,7 @@
         <li>Coleta das bolinhas</li>
         <li>Depósito no alvo</li>
       </ul>
+      <button class="tl-details-btn" onclick="event.stopPropagation(); openPhaseModal(2)">Ver detalhes →</button>
     </div>
 
     <div class="tl-item" onclick="activatePhase(this)">
@@ -2018,6 +2246,7 @@
         <li>Correção de falhas</li>
         <li>Simulação final</li>
       </ul>
+      <button class="tl-details-btn" onclick="event.stopPropagation(); openPhaseModal(3)">Ver detalhes →</button>
     </div>
 
   </div>
@@ -2040,6 +2269,59 @@
   <p class="section-desc">Da fundação do clube às competições — os momentos que moldaram o Clube de Robótica JGP.</p>
   <div class="hist-timeline" id="hist-timeline">
     <div id="hist-empty-state">Carregando história…</div>
+  </div>
+</div>
+
+<!-- ── BOT OBR ─────────────────────────────────── -->
+<button class="obr-fab" id="obr-fab" onclick="toggleObrChat()" aria-label="Tirar dúvidas sobre a OBR" title="Assistente OBR">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/>
+    <path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+  </svg>
+</button>
+
+<div class="obr-chat" id="obr-chat" role="dialog" aria-label="Assistente OBR">
+  <div class="obr-chat-head">
+    <div class="obr-chat-avatar">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/>
+        <path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+      </svg>
+    </div>
+    <div class="obr-chat-head-info">
+      <div class="obr-chat-head-name">Assistente OBR</div>
+      <div class="obr-chat-head-sub">Tire suas dúvidas sobre a competição</div>
+    </div>
+    <button class="obr-chat-close" onclick="toggleObrChat()" aria-label="Fechar">✕</button>
+  </div>
+  <div class="obr-messages" id="obr-messages"></div>
+  <div class="obr-input-row">
+    <textarea class="obr-input" id="obr-input" placeholder="Pergunte sobre a OBR…" rows="1"
+      onkeydown="obrKeydown(event)" oninput="autoResize(this)"></textarea>
+    <button class="obr-send" id="obr-send" onclick="sendObrMessage()" aria-label="Enviar" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ── MODAL DETALHES FASE ────────────────────── -->
+<div id="phase-modal" class="phase-modal-overlay" onclick="closePhaseModal(event)">
+  <div class="phase-modal-box">
+    <div class="phase-modal-header">
+      <div style="display:flex;align-items:center;gap:14px;flex:1">
+        <div class="phase-modal-num" id="pm-num"></div>
+        <div>
+          <div class="phase-modal-title" id="pm-title"></div>
+          <div class="phase-modal-date"  id="pm-date"></div>
+        </div>
+      </div>
+      <button class="phase-modal-close" onclick="document.getElementById('phase-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="phase-modal-goal" id="pm-goal"></div>
+    <ul class="phase-modal-tasks" id="pm-tasks"></ul>
+    <div class="phase-modal-result" id="pm-result"></div>
   </div>
 </div>
 
@@ -2609,8 +2891,254 @@ function closeHistLightbox() {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeHistLightbox();
+  if (e.key === 'Escape') {
+    closeHistLightbox();
+    document.getElementById('phase-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
 });
+
+/* ── Bot OBR (FAQ local — sem API, sem custo) ── */
+const OBR_FAQ = [
+  {
+    tags: ['o que é', 'obr', 'olimpiada', 'olimpíada', 'o que e'],
+    answer: 'A OBR é a Olimpíada Brasileira de Robótica — uma competição científica pública, gratuita e sem fins lucrativos. O objetivo é incentivar jovens na área de tecnologia e robótica. Tem mais de 200 mil participantes em todo o Brasil. Site oficial: obr.robocup.org.br',
+  },
+  {
+    tags: ['inscrever', 'inscrição', 'inscricao', 'participar', 'como entrar', 'cadastro', 'inscrever'],
+    answer: 'As inscrições são gratuitas e feitas pelo Sistema Olimpo no Portal do Participante (obr.robocup.org.br). O professor responsável cadastra a escola e os alunos. Para OBR 2026, as inscrições abriram em março de 2026.',
+  },
+  {
+    tags: ['modalidade', 'categoria', 'tipos', 'resgate', 'artistica', 'artística', 'virtual', 'simulacao', 'simulação', 'teorica', 'teórica'],
+    answer: 'A OBR tem 4 modalidades:\n\n• Resgate Presencial — robô autônomo que coleta "vítimas" (bolinhas) numa pista.\n• Artística — apresentação cultural com robô (dança, coreografia).\n• Virtual/Simulação — robôs digitais em ambiente simulado, sem hardware físico.\n• Teórica — prova individual de múltipla escolha sobre robótica (Níveis 1 a 5).\n\nNosso clube compete na modalidade Resgate Nível 2.',
+  },
+  {
+    tags: ['pista', 'percurso', 'campo', 'arena', 'trajeto'],
+    answer: 'A pista de Resgate é um labirinto com linha preta no chão, rampas, pontes e obstáculos. O robô deve seguir a linha, detectar as bolinhas (vítimas) com sensores e depositá-las na zona de resgate. Cada vítima corretamente entregue vale pontos.',
+  },
+  {
+    tags: ['vitima', 'vítima', 'bolinha', 'bolinhas', 'coleta', 'resgatar'],
+    answer: 'As "vítimas" são bolinhas coloridas que simulam pessoas em situação de desastre. O robô detecta as bolinhas com sensores (cor, câmera ou distância), coleta com uma garra/sucção e deposita na zona de resgate. Cada vítima corretamente depositada vale pontos extras.',
+  },
+  {
+    tags: ['robo', 'robô', 'construir', 'montar', 'hardware', 'tamanho', 'peso', 'dimensão', 'dimensao'],
+    answer: 'O robô deve ser autônomo (sem controle remoto durante a prova). As dimensões e o peso máximo variam conforme o manual de cada edição — sempre consulte o manual oficial disponível em obr.robocup.org.br/participantes/. O robô pode usar Arduino, Raspberry Pi, LEGO Mindstorms ou qualquer plataforma.',
+  },
+  {
+    tags: ['sensor', 'sensores', 'câmera', 'camera', 'ultrassom', 'infravermelho', 'cor'],
+    answer: 'Os sensores mais usados na OBR Resgate são:\n• Sensor de cor (detectar a linha e as vítimas)\n• Sensor ultrassônico (medir distância de paredes/obstáculos)\n• Câmera (visão computacional, mais avançado)\n• Sensor infravermelho (seguimento de linha)\n\nA escolha depende do seu design. Sensor de cor + ultrassom é o combo mais comum.',
+  },
+  {
+    tags: ['programar', 'programação', 'programacao', 'codigo', 'código', 'linguagem', 'arduino', 'python', 'c++'],
+    answer: 'As linguagens mais usadas na OBR são:\n• C/C++ (Arduino IDE) — mais popular no Resgate\n• Python (Raspberry Pi, MicroPython)\n• Scratch/Blockly (iniciantes, Nível 1)\n\nNosso clube usa C++ no Arduino. A dica é testar cada função separadamente antes de integrar.',
+  },
+  {
+    tags: ['etapa', 'etapas', 'fase', 'regional', 'estadual', 'nacional', 'mundial', 'robocup'],
+    answer: 'A competição tem 3 etapas:\n1. Regional/Estadual — organizada em cada estado (1ª fase)\n2. Nacional — os melhores de cada estado se encontram numa cidade diferente a cada ano\n3. RoboCup Mundial — os melhores do Nível 2 presencial concorrem a vagas na maior competição de robótica do mundo\n\nEm 2025 a Etapa Nacional foi em Vitória/ES.',
+  },
+  {
+    tags: ['premio', 'prêmio', 'premiacao', 'premiação', 'medalha', 'bolsa', 'cnpq', 'ganhar'],
+    answer: 'Os prêmios incluem:\n• Medalhas e certificados para todos os classificados\n• Bolsas de Iniciação Científica Júnior do CNPq\n• Vagas em instituições públicas de ensino\n• Classificação para a RoboCup Mundial (destaques do Nível 2)\n• Minicursos e workshops',
+  },
+  {
+    tags: ['nivel', 'nível', 'nivel 1', 'nivel 2', 'nivel1', 'nivel2', 'diferença', 'diferenca'],
+    answer: 'Nível 1 — pista mais simples, linha reta, poucas curvas, vítimas mais visíveis. Ideal para iniciantes.\n\nNível 2 — pista complexa com rampas, curvas fechadas, obstáculos, e vítimas mais difíceis de detectar. Os melhores do Nível 2 concorrem à RoboCup Mundial.\n\nNosso clube compete no Nível 2.',
+  },
+  {
+    tags: ['calendario', 'calendário', 'data', 'quando', 'prazo'],
+    answer: 'Confira as datas oficiais no Portal do Participante em obr.robocup.org.br/participantes/. As datas variam por estado. Cronograma do nosso clube JGP para OBR 2026:\n• Fase 1 (Pesquisa): 11–18/05\n• Fase 2 (Montagem): 19–30/05\n• Fase 3 (Programação): 31/05–10/06\n• Fase 4 (Testes): 11–20/06',
+  },
+  {
+    tags: ['contato', 'email', 'duvida', 'dúvida', 'suporte', 'ajuda obr'],
+    answer: 'Para dúvidas diretamente com a OBR:\n• Email da modalidade prática: obr.pratica@robocup.org.br\n• Site oficial: obr.robocup.org.br\n• Instagram e Facebook: @OBRoficial\n\nPara dúvidas do nosso clube, fale com o Prof. Jorge.',
+  },
+  {
+    tags: ['gratuito', 'gratis', 'grátis', 'custo', 'pagar', 'taxa'],
+    answer: 'Sim! A OBR é totalmente gratuita — inscrição, participação e certificados. É uma iniciativa pública sem fins lucrativos financiada pelo CNPq/MCTI/MEC. Você só precisa ter o robô e comparecer às etapas.',
+  },
+  {
+    tags: ['manual', 'regras', 'regulamento', 'documento'],
+    answer: 'Os manuais e regulamentos oficiais de cada modalidade estão disponíveis em obr.robocup.org.br/participantes/ na seção "Documentos e Manuais". Sempre leia o manual da edição atual — as regras podem mudar a cada ano!',
+  },
+];
+
+const OBR_FALLBACK = 'Não encontrei uma resposta exata para isso. Recomendo consultar o site oficial obr.robocup.org.br ou enviar um email para obr.pratica@robocup.org.br. Tente perguntar sobre: inscrições, modalidades, pista de resgate, sensores, premiações ou etapas da competição.';
+
+function obrMatch(question) {
+  const q = question.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ');
+  let best = null, bestScore = 0;
+  for (const item of OBR_FAQ) {
+    const score = item.tags.reduce((s, tag) => s + (q.includes(tag) ? tag.length : 0), 0);
+    if (score > bestScore) { bestScore = score; best = item; }
+  }
+  return bestScore > 0 ? best.answer : OBR_FALLBACK;
+}
+
+let obrOpen = false;
+let obrBusy = false;
+
+function toggleObrChat() {
+  obrOpen = !obrOpen;
+  const chat = document.getElementById('obr-chat');
+  chat.classList.toggle('open', obrOpen);
+  if (obrOpen) {
+    if (!document.getElementById('obr-messages').hasChildNodes()) {
+      addObrMsg('bot', 'Olá! Sou o assistente do Clube de Robótica JGP.\nPosso tirar dúvidas sobre a OBR: inscrições, modalidades, pista de resgate, sensores, etapas e muito mais. O que você quer saber?');
+      addObrSuggestions();
+    }
+    setTimeout(() => document.getElementById('obr-input').focus(), 100);
+  }
+}
+
+function addObrSuggestions() {
+  const msgs = document.getElementById('obr-messages');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:4px 0';
+  const suggestions = ['O que é a OBR?', 'Como me inscrever?', 'O que é Resgate?', 'Quais são os prêmios?'];
+  suggestions.forEach(s => {
+    const btn = document.createElement('button');
+    btn.textContent = s;
+    btn.style.cssText = 'font-size:0.72em;padding:5px 10px;border-radius:20px;border:1px solid var(--accent-mid);background:var(--accent-soft);color:var(--accent);cursor:pointer;font-family:inherit;';
+    btn.onclick = () => { document.getElementById('obr-input').value = s; sendObrMessage(); };
+    wrap.appendChild(btn);
+  });
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addObrMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = `obr-msg ${role}`;
+  div.textContent = text;
+  const msgs = document.getElementById('obr-messages');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function obrKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendObrMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+  document.getElementById('obr-send').disabled = !el.value.trim();
+}
+
+function sendObrMessage() {
+  if (obrBusy) return;
+  const input = document.getElementById('obr-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  obrBusy = true;
+  document.getElementById('obr-send').disabled = true;
+  input.value = '';
+  input.style.height = 'auto';
+
+  addObrMsg('user', question);
+  const typingEl = addObrMsg('bot typing', '…');
+
+  // Simula uma pequena pausa para parecer mais natural
+  setTimeout(() => {
+    typingEl.textContent = obrMatch(question);
+    typingEl.classList.remove('typing');
+    document.getElementById('obr-messages').scrollTop = 9999;
+    obrBusy = false;
+    document.getElementById('obr-send').disabled = false;
+  }, 400);
+}
+
+/* ── Modal de detalhes das fases ────────────── */
+const PHASES = [
+  {
+    num: '01', title: 'Pesquisa e Design', date: '11 – 18 de maio',
+    goal: 'Objetivo: Decidir COMO será o robô antes de montar qualquer coisa.',
+    tasks: [
+      'Ler as regras da OBR Resgate (manual oficial)',
+      'Pesquisar modelos de robôs de resgate no YouTube, GitHub e fóruns',
+      'Consultar livros ou materiais de apoio disponíveis',
+      'Escolher tipo de chassi (2 rodas, esteira, 4 rodas…)',
+      'Definir os motores (quantidade, torque necessário)',
+      'Definir o mecanismo de garra/coleta das bolinhas',
+      'Decidir os sensores (ultrassom, câmera, cor, linha…)',
+      'Fazer um esboço/desenho do robô no papel ou digital',
+      'Listar todos os materiais e componentes necessários',
+    ],
+    result: 'Resultado esperado: Um desenho do robô com lista de peças definida.',
+  },
+  {
+    num: '02', title: 'Montagem Física', date: '19 – 30 de maio',
+    goal: 'Objetivo: Construir o robô conforme o design aprovado.',
+    tasks: [
+      'Separar e organizar todos os componentes',
+      'Montar o chassi',
+      'Fixar e conectar os motores',
+      'Instalar o mecanismo de garra/coleta',
+      'Posicionar e conectar os sensores',
+      'Organizar a fiação (sem cabos soltos ou mal fixados)',
+      'Testar se o robô se move (sem programação, manual)',
+      'Ajustar o que não ficou como planejado',
+    ],
+    result: 'Resultado esperado: Robô montado, ligando e se movendo. Se durante a Fase 3 aparecer algum problema físico, volte aqui e corrija antes de continuar.',
+  },
+  {
+    num: '03', title: 'Programação', date: '31 mai – 10 jun',
+    goal: 'Objetivo: Fazer o robô executar as tarefas da competição de forma autônoma.',
+    tasks: [
+      'Configurar o ambiente de programação (IDE, bibliotecas)',
+      'Programar o movimento básico (frente, ré, curvas)',
+      'Programar a leitura dos sensores',
+      'Programar o seguimento de linha/percurso',
+      'Programar a detecção e coleta das bolinhas',
+      'Programar o depósito das bolinhas no local correto',
+      'Programar o retorno ao ponto de saída (se exigido pelas regras)',
+      'Testar cada função separadamente antes de integrar tudo',
+    ],
+    result: 'Resultado esperado: Robô executando todas as tarefas de forma autônoma. Dica: divida a programação em blocos pequenos e teste cada bloco antes de avançar.',
+  },
+  {
+    num: '04', title: 'Testes e Ajustes', date: '11 – 20 de junho',
+    goal: 'Objetivo: Refinar o desempenho na pista simulada e chegar na competição preparado.',
+    tasks: [
+      'Realizar rodadas completas na pista simulada',
+      'Cronometrar cada tentativa e registrar os resultados',
+      'Identificar os pontos onde o robô trava ou erra',
+      'Corrigir falhas (físicas ou de programação)',
+      'Simular condições da competição (luz, piso, pressão de tempo)',
+      'Treinar a equipe para montagem rápida no dia da prova',
+      'Revisar as regras e garantir que nada foi esquecido',
+      'Fazer uma rodada final de simulação 2 dias antes da competição',
+    ],
+    result: 'Resultado esperado: Equipe confiante, robô estável e sem falhas críticas. Lembre: o robô não precisa ser perfeito, precisa ser CONFIÁVEL.',
+  },
+];
+
+function openPhaseModal(idx) {
+  const p = PHASES[idx];
+  document.getElementById('pm-num').textContent   = p.num;
+  document.getElementById('pm-title').textContent = p.title;
+  document.getElementById('pm-date').textContent  = p.date;
+  document.getElementById('pm-goal').textContent  = p.goal;
+  document.getElementById('pm-tasks').innerHTML   =
+    p.tasks.map(t => `<li>${t}</li>`).join('');
+  document.getElementById('pm-result').innerHTML  =
+    `<strong>✓ ${p.result}</strong>`;
+  document.getElementById('phase-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePhaseModal(event) {
+  if (event && !event.target.classList.contains('phase-modal-overlay')) return;
+  document.getElementById('phase-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
 
 /* ── Mobile menu ────────────────────────────── */
 function toggleMenu() {
