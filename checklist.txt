@@ -6,9 +6,10 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
 ----------------------------------------------------------
 1. HOSPEDAGEM
 ----------------------------------------------------------
-[ ] 1.1 Escolher provedor gratuito (recomendado: Cloudflare Pages)
-        Alternativas: GitHub Pages, Netlify, Vercel
-[ ] 1.2 Criar conta no provedor escolhido
+[x] 1.1 Escolher provedor gratuito: Cloudflare Pages (Workers)
+        -> URL atual: https://clube-robotica-jgp.jorge-fxvx.workers.dev
+[x] 1.2 Deploy automático via GitHub (main branch)
+[x] 1.3 Arquivo _redirects criado — /admin → admin.html (commit 1ca3eb9)
 
 ----------------------------------------------------------
 2. VERSIONAMENTO (GIT)
@@ -72,10 +73,12 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
 ----------------------------------------------------------
 5. SUPABASE — CONFIGURAÇÃO DE URLS
 ----------------------------------------------------------
-[ ] 5.1 Authentication > URL Configuration: adicionar Site URL
-        pública (ex.: https://clube-jgp.pages.dev)
-[ ] 5.2 Adicionar Redirect URLs (login, recuperação de senha)
-[ ] 5.3 API > CORS: liberar o domínio público
+[~] 5.1 Authentication > URL Configuration: adicionar Site URL pública
+        -> FAZER MANUALMENTE: supabase.com > projeto > Auth > URL Configuration
+        -> Site URL: https://clube-robotica-jgp.jorge-fxvx.workers.dev
+[~] 5.2 Adicionar Redirect URLs:
+        -> https://clube-robotica-jgp.jorge-fxvx.workers.dev/**
+[ ] 5.3 API > CORS: liberar o domínio público (se necessário)
 
 ----------------------------------------------------------
 6. PROTEÇÃO DO ADMIN.HTML
@@ -108,7 +111,7 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
 ----------------------------------------------------------
 [x] 9.1 Investigar relato do Jorge: "index.html está fora, não
         carrega algumas informações" (2026-05-08)
-        CAUSA RAIZ ENCONTRADA E CORRIGIDA (2026-05-12):
+        CAUSA RAIZ ENCONTRADA E CORRIGIDA (2026-05-12) — ver também 9.4:
         -> blog_posts retornava 401; history_events retornava 200
         -> Postgres log: "permission denied for function is_admin"
         -> A policy admin_all_blog_posts (roles=public) chama is_admin()
@@ -141,5 +144,15 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
         d) Seção 7 — Domínio (subdomínio *.pages.dev grátis primeiro)
         e) Seção 8 — Testes em produção (mobile, fora da escola)
 
+[ ] 9.4 Corrigir acesso /admin (2026-05-12):
+        CAUSAS:
+        a) Cloudflare Pages não mapeava /admin → admin.html
+           -> CORRIGIDO: arquivo _redirects criado (commit 1ca3eb9)
+        b) admin.html chamava rpc('get_my_role') mas função não existia
+           -> CORRIGIDO: função get_my_role() criada no Supabase
+              (migration: create_get_my_role_function)
+        c) Supabase Auth: Site URL e Redirect URLs não configuradas
+           -> PENDENTE: fazer manualmente (ver seção 5.1 e 5.2)
+
 ==========================================================
-Última atualização: 2026-05-08 (encerrado o dia; retomar pela seção 9)
+Última atualização: 2026-05-12 (correções /admin; retomar pela seção 5.1/5.2)
