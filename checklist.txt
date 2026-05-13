@@ -135,6 +135,16 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
         -> Combinar regra: sempre `git pull` antes de editar
         -> Avaliar se colega também precisa virar admin no Supabase
 
+[x] 9.5 Upload de capa do blog retornava 400 (2026-05-12):
+        CAUSA: storage.objects não tinha policy SELECT para blog-covers
+        e history-photos. O upsert precisa de SELECT para checar se
+        o arquivo existe antes de inserir/atualizar.
+        CORREÇÃO: policies "public read blog covers" e
+        "public read history photos" criadas (migration:
+        add_select_policies_storage_buckets).
+        BONUS: storage policies reescritas com query direta em vez de
+        is_admin() para evitar problemas de schema context.
+
 [ ] 9.3 Próximos passos do deploy (ordem sugerida):
         a) Seção 1 — Hospedagem (Cloudflare Pages recomendado;
            conecta direto ao GitHub para deploy automático)
@@ -144,7 +154,7 @@ Legenda: [ ] em aberto   [x] concluído   [~] aceito   [N/A] não aplicável
         d) Seção 7 — Domínio (subdomínio *.pages.dev grátis primeiro)
         e) Seção 8 — Testes em produção (mobile, fora da escola)
 
-[ ] 9.4 Corrigir acesso /admin (2026-05-12):
+[x] 9.4 Corrigir acesso /admin (2026-05-12):
         CAUSAS:
         a) Cloudflare Pages não mapeava /admin → admin.html
            -> CORRIGIDO: arquivo _redirects criado (commit 1ca3eb9)
