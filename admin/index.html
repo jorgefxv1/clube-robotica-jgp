@@ -1378,6 +1378,22 @@ const _authTimeout = setTimeout(() => {
   }
 }, 8000);
 
+function showLogin(msg) {
+  document.getElementById('loading-screen').classList.add('hidden');
+  const loginScr = document.getElementById('login-screen');
+  loginScr.style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'Entrar';
+  if (msg) {
+    const err = document.getElementById('login-error');
+    err.textContent = msg;
+    err.style.display = 'block';
+  } else {
+    document.getElementById('login-error').style.display = 'none';
+  }
+}
+
 sb.auth.onAuthStateChange(async (event, session) => {
   clearTimeout(_authTimeout);
   const loading  = document.getElementById('loading-screen');
@@ -1385,7 +1401,20 @@ sb.auth.onAuthStateChange(async (event, session) => {
   const dash     = document.getElementById('dashboard');
 
   if (session) {
-    const { data: role, error: roleErr } = await sb.rpc('get_my_role');
+    let role, roleErr;
+    try {
+      const rpcTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 6000)
+      );
+      const rpcCall = sb.rpc('get_my_role').then(r => r);
+      const result = await Promise.race([rpcCall, rpcTimeout]);
+      role = result.data;
+      roleErr = result.error;
+    } catch (e) {
+      await sb.auth.signOut();
+      showLogin('Tempo esgotado ao verificar permissão. Tente novamente.');
+      return;
+    }
     if (roleErr || (role !== 'admin' && role !== 'editor')) {
       await sb.auth.signOut();
       loading.classList.add('hidden');
@@ -1407,12 +1436,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
       loadDashboard();
     }
   } else {
-    loading.classList.add('hidden');
-    loginScr.style.display = 'flex';
-    dash.style.display = 'none';
-    document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').textContent = 'Entrar';
-    document.getElementById('login-error').style.display = 'none';
+    showLogin();
   }
 });
 
