@@ -1430,11 +1430,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     dash.style.display = 'block';
     document.getElementById('user-email-display').textContent = session.user.email;
     applyRoleRestrictions();
-    if (currentUserRole === 'editor') {
-      enterSection('blog');
-    } else {
-      loadDashboard();
-    }
+    loadDashboard();
   } else {
     showLogin();
   }
@@ -1651,13 +1647,7 @@ async function addMember(teamId) {
 
 /* ── Role restrictions ──────────────────────── */
 function applyRoleRestrictions() {
-  if (currentUserRole !== 'editor') return;
-  ['equipes', 'historia'].forEach(s => {
-    const card = document.querySelector(`[aria-label="Gerenciar ${s === 'equipes' ? 'equipes' : 'história'}"]`);
-    if (card) card.style.display = 'none';
-    const tab = document.querySelector(`.tab-btn[data-tab="${s}"]`);
-    if (tab) tab.style.display = 'none';
-  });
+  // editor tem acesso a todas as seções de conteúdo
 }
 
 /* ── Tabs ───────────────────────────────────── */
