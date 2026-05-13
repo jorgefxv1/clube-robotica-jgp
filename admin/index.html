@@ -1999,7 +1999,7 @@ async function uploadPostCover(input, postId) {
   const ext  = file.name.split('.').pop();
   const path = `${postId}.${ext}`;
   const { error } = await sb.storage.from('blog-covers').upload(path, file, { upsert: true });
-  if (error) { showToast('Erro no upload', 'error'); return; }
+  if (error) { showToast('Erro no upload: ' + error.message, 'error'); return; }
   const { data: { publicUrl } } = sb.storage.from('blog-covers').getPublicUrl(path);
   await sb.from('blog_posts').update({ cover_url: publicUrl }).eq('id', postId);
   await loadBlogDashboard();
@@ -2041,12 +2041,14 @@ async function addPost(publish) {
     const ext  = newPostCoverFile.name.split('.').pop();
     const path = `${data.id}.${ext}`;
     const { error: upErr } = await sb.storage.from('blog-covers').upload(path, newPostCoverFile, { upsert: true });
-    if (!upErr) {
+    document.getElementById('np-uploading').style.display = 'none';
+    if (upErr) {
+      showToast('Post criado, mas erro no upload da capa: ' + upErr.message, 'error');
+    } else {
       const { data: { publicUrl } } = sb.storage.from('blog-covers').getPublicUrl(path);
       await sb.from('blog_posts').update({ cover_url: publicUrl }).eq('id', data.id);
       data.cover_url = publicUrl;
     }
-    document.getElementById('np-uploading').style.display = 'none';
   }
 
   ['np-title','np-excerpt','np-content'].forEach(id => document.getElementById(id).value = '');
