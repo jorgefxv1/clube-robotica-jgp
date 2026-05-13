@@ -2167,7 +2167,11 @@ async function uploadTeamIcon(input) {
   const ext  = file.name.split('.').pop();
   const path = `${_iconTarget}-${Date.now()}.${ext}`;
   try {
-    const { error } = await sb.storage.from('team-icons').upload(path, file, { upsert: true });
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Tempo esgotado (30 s)')), 30000));
+    const { error } = await Promise.race([
+      sb.storage.from('team-icons').upload(path, file, { upsert: true }),
+      timeout
+    ]);
     if (error) { showToast('Erro no upload: ' + error.message, 'error'); return; }
     const { data } = sb.storage.from('team-icons').getPublicUrl(path);
     selectIcon(data.publicUrl);
