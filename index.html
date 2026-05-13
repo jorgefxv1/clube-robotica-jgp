@@ -1542,13 +1542,53 @@
       border-top: 1px solid var(--border);
       padding: 28px 48px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      gap: 24px;
       max-width: 1080px;
       margin: 0 auto;
     }
 
+    .footer-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
     footer p { font-size: 0.72em; color: var(--muted); }
+
+    .footer-partners {
+      display: flex;
+      justify-content: center;
+      gap: 64px;
+      flex-wrap: wrap;
+      width: 100%;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-partner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-partner span {
+      font-size: 0.65em;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .footer-partner img {
+      height: 64px;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.85;
+    }
 
     .obr-pill {
       font-size: 0.7em;
@@ -1782,10 +1822,18 @@
       .contato-items { flex-direction: column; align-items: center; gap: 12px; }
 
       footer {
-        flex-direction: column;
-        gap: 12px;
-        text-align: center;
+        gap: 16px;
         padding: 24px 20px;
+      }
+
+      .footer-top {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+
+      .footer-partners {
+        gap: 32px;
       }
     }
     /* ─── BOT OBR ────────────────────────────────────────── */
@@ -2376,8 +2424,20 @@
 
 <!-- ── FOOTER ─────────────────────────────────── -->
 <footer>
-  <p>© 2026 Clube de Robótica JGP — Escola Estadual Júlia Gonçalves Passarinho</p>
-  <span class="obr-pill">OBR 2026</span>
+  <div class="footer-top">
+    <p>© 2026 Clube de Robótica JGP — Escola Estadual Júlia Gonçalves Passarinho</p>
+    <span class="obr-pill">OBR 2026</span>
+  </div>
+  <div class="footer-partners">
+    <div class="footer-partner">
+      <span>Realização</span>
+      <img src="assets/logo-cd.png" alt="Ciência de Dados JGP">
+    </div>
+    <div class="footer-partner">
+      <span>Apoio</span>
+      <img src="assets/logo-gradual.png" alt="Instituto Gradual">
+    </div>
+  </div>
 </footer>
 
 <!-- ── MEMBER POPOVER ─────────────────────────── -->
