@@ -2016,7 +2016,15 @@ async function addPost(publish) {
   const author  = document.getElementById('np-author').value.trim();
   const excerpt = document.getElementById('np-excerpt').value.trim();
   const content = document.getElementById('np-content').value.trim();
-  if (!title) { showToast('Escreva um título', 'error'); return; }
+  if (!title) {
+    const el = document.getElementById('np-title');
+    el.style.borderColor = 'var(--red)';
+    el.focus();
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => el.style.borderColor = '', 2500);
+    showToast('Preencha o título antes de publicar', 'error');
+    return;
+  }
 
   const { data: existing } = await sb.from('blog_posts').select('display_order').order('display_order', { ascending: false }).limit(1);
   const order = (existing?.[0]?.display_order ?? 0) + 1;
